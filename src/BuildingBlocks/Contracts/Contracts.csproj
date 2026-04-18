@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>PlatformWallet.Contracts</RootNamespace>
+    <AssemblyName>PlatformWallet.Contracts</AssemblyName>
+  </PropertyGroup>
+
+  <!--
+    HARD RULE: This project MUST have exactly one PackageReference:
+    MassTransit.Abstractions. No EF Core, no MediatR, no domain types.
+    Enforced by the `contracts-purity-reviewer` subagent and ArchitectureTests.
+  -->
+  <ItemGroup>
+    <PackageReference Include="MassTransit.Abstractions" />
+  </ItemGroup>
+
+</Project>

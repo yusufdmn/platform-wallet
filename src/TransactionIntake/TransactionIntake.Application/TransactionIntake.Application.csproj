@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>PlatformWallet.TransactionIntake.Application</RootNamespace>
+    <AssemblyName>PlatformWallet.TransactionIntake.Application</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TransactionIntake.Domain\TransactionIntake.Domain.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Contracts\Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MassTransit.Abstractions" />
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+</Project>

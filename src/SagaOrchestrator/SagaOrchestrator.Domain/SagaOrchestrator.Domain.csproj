@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>PlatformWallet.SagaOrchestrator.Domain</RootNamespace>
+    <AssemblyName>PlatformWallet.SagaOrchestrator.Domain</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- State machine IS the domain; it needs MT Automatonymous base types. -->
+    <ProjectReference Include="..\..\BuildingBlocks\Contracts\Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="MassTransit.Abstractions" />
+  </ItemGroup>
+</Project>

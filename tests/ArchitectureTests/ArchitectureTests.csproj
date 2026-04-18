@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>PlatformWallet.ArchitectureTests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- References every production project so NetArchTest can inspect them. -->
+    <ProjectReference Include="..\..\src\BuildingBlocks\Contracts\Contracts.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\Grpc.Protos\Grpc.Protos.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\Observability\Observability.csproj" />
+    <ProjectReference Include="..\..\src\ApiGateway\ApiGateway.Yarp.csproj" />
+    <ProjectReference Include="..\..\src\TransactionIntake\TransactionIntake.Domain\TransactionIntake.Domain.csproj" />
+    <ProjectReference Include="..\..\src\TransactionIntake\TransactionIntake.Application\TransactionIntake.Application.csproj" />
+    <ProjectReference Include="..\..\src\TransactionIntake\TransactionIntake.Infrastructure\TransactionIntake.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\TransactionIntake\TransactionIntake.Api\TransactionIntake.Api.csproj" />
+    <ProjectReference Include="..\..\src\SagaOrchestrator\SagaOrchestrator.Domain\SagaOrchestrator.Domain.csproj" />
+    <ProjectReference Include="..\..\src\SagaOrchestrator\SagaOrchestrator.Application\SagaOrchestrator.Application.csproj" />
+    <ProjectReference Include="..\..\src\SagaOrchestrator\SagaOrchestrator.Infrastructure\SagaOrchestrator.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\SagaOrchestrator\SagaOrchestrator.Worker\SagaOrchestrator.Worker.csproj" />
+    <ProjectReference Include="..\..\src\Ledger\Ledger.Domain\Ledger.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Ledger\Ledger.Application\Ledger.Application.csproj" />
+    <ProjectReference Include="..\..\src\Ledger\Ledger.Infrastructure\Ledger.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Ledger\Ledger.Api\Ledger.Api.csproj" />
+    <ProjectReference Include="..\..\src\BalanceQuery\BalanceQuery.Domain\BalanceQuery.Domain.csproj" />
+    <ProjectReference Include="..\..\src\BalanceQuery\BalanceQuery.Application\BalanceQuery.Application.csproj" />
+    <ProjectReference Include="..\..\src\BalanceQuery\BalanceQuery.Infrastructure\BalanceQuery.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\BalanceQuery\BalanceQuery.Api\BalanceQuery.Api.csproj" />
+    <ProjectReference Include="..\..\src\WebhookDispatcher\WebhookDispatcher.Domain\WebhookDispatcher.Domain.csproj" />
+    <ProjectReference Include="..\..\src\WebhookDispatcher\WebhookDispatcher.Application\WebhookDispatcher.Application.csproj" />
+    <ProjectReference Include="..\..\src\WebhookDispatcher\WebhookDispatcher.Infrastructure\WebhookDispatcher.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\WebhookDispatcher\WebhookDispatcher.Worker\WebhookDispatcher.Worker.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+</Project>

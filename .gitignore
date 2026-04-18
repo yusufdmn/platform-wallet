@@ -1,0 +1,83 @@
+# .NET build output
+bin/
+obj/
+out/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Tests / coverage
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# Roslyn / Rider / VS
+.vs/
+.idea/
+*.sln.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Env / secrets (NEVER commit)
+# Single .env lives at the repo root; no per-folder env files in this repo.
+.env
+.env.*
+!.env.example
+
+# Per-user Claude Code state (not shared across contributors)
+.claude/settings.local.json
+
+# Architectural source-of-truth kept local to the maintainer; not checked in.
+TheMainPlan.md
+
+# NuGet
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+!**/packages/repositories.config
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# dotnet tools
+.dotnet/
+
+# Rider
+.idea/
+*.DotSettings.user
+
+# Azure
+.azure/
+
+# Docker
+**/docker-compose.override.yml
+
+# Ops console build artifacts (if any)
+src/ApiGateway.Yarp/wwwroot/console/node_modules/
+src/ApiGateway.Yarp/wwwroot/console/dist/

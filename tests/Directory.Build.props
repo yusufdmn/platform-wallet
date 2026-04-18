@@ -1,0 +1,13 @@
+<Project>
+  <!-- Imports the repo-root Directory.Build.props and then relaxes rules that
+       only make sense under tests/. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <!-- xUnit convention: descriptive snake_case test method names
+         (e.g. Given_X_When_Y_Then_Z) are deliberately underscore-separated.
+         CA1707 only applies to production code. -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>

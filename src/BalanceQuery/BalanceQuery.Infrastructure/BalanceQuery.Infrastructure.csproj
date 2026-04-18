@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>PlatformWallet.BalanceQuery.Infrastructure</RootNamespace>
+    <AssemblyName>PlatformWallet.BalanceQuery.Infrastructure</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BalanceQuery.Domain\BalanceQuery.Domain.csproj" />
+    <ProjectReference Include="..\BalanceQuery.Application\BalanceQuery.Application.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Grpc.Protos\Grpc.Protos.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ZiggyCreatures.FusionCache" />
+    <PackageReference Include="ZiggyCreatures.FusionCache.Backplane.StackExchangeRedis" />
+    <PackageReference Include="ZiggyCreatures.FusionCache.Serialization.SystemTextJson" />
+    <PackageReference Include="StackExchange.Redis" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Grpc.Net.ClientFactory" />
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>PlatformWallet.WebhookDispatcher.Domain</RootNamespace>
+    <AssemblyName>PlatformWallet.WebhookDispatcher.Domain</AssemblyName>
+  </PropertyGroup>
+</Project>

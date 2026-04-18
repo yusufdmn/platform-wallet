@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>PlatformWallet.Grpc.Protos</RootNamespace>
+    <AssemblyName>PlatformWallet.Grpc.Protos</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Net.Client" />
+    <PackageReference Include="Grpc.Tools">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!--
+    .proto files live under Protos/. Add them with <Protobuf Include="Protos\ledger.proto" GrpcServices="Both" />
+    once contracts are authored. GrpcServices=Both generates client + server stubs; servers use "Server",
+    clients use "Client". Defaults to Both so consumers pick as needed.
+  -->
+
+</Project>

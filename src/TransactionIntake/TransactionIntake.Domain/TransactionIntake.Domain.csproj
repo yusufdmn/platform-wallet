@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>PlatformWallet.TransactionIntake.Domain</RootNamespace>
+    <AssemblyName>PlatformWallet.TransactionIntake.Domain</AssemblyName>
+  </PropertyGroup>
+  <!-- Domain: no external deps beyond System.*. -->
+</Project>

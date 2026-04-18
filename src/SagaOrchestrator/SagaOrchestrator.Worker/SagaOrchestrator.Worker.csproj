@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+  <PropertyGroup>
+    <RootNamespace>PlatformWallet.SagaOrchestrator.Worker</RootNamespace>
+    <AssemblyName>PlatformWallet.SagaOrchestrator.Worker</AssemblyName>
+    <UserSecretsId>platform-wallet-saga-worker</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SagaOrchestrator.Domain\SagaOrchestrator.Domain.csproj" />
+    <ProjectReference Include="..\SagaOrchestrator.Application\SagaOrchestrator.Application.csproj" />
+    <ProjectReference Include="..\SagaOrchestrator.Infrastructure\SagaOrchestrator.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Contracts\Contracts.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Observability\Observability.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="MassTransit" />
+    <PackageReference Include="MassTransit.RabbitMQ" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="DotNetEnv" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  </ItemGroup>
+</Project>

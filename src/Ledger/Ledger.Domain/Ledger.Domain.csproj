@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>PlatformWallet.Ledger.Domain</RootNamespace>
+    <AssemblyName>PlatformWallet.Ledger.Domain</AssemblyName>
+  </PropertyGroup>
+
+  <!--
+    HARD RULE: Domain has ZERO external dependencies beyond System.*.
+    No EF Core, MediatR, MassTransit.IConsumer, HttpClient, ASP.NET Core.
+    Enforced by /tests/ArchitectureTests + `dotnet-clean-architect` subagent.
+  -->
+
+</Project>

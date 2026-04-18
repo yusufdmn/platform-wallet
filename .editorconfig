@@ -1,0 +1,74 @@
+root = true
+
+[*]
+indent_style = space
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{cs,csx}]
+indent_size = 4
+max_line_length = 140
+
+# Organize usings
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+file_header_template = unset
+
+# C# language & style
+csharp_style_namespace_declarations = file_scoped:error
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:silent
+csharp_style_expression_bodied_constructors = when_on_single_line:silent
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
+csharp_prefer_braces = true:warning
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_indent_labels = one_less_than_current
+csharp_using_directive_placement = outside_namespace:warning
+
+# Implicit/var
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:silent
+
+# Modifier order
+csharp_preferred_modifier_order = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,volatile,async:warning
+
+# Naming: Interfaces start with I
+dotnet_naming_rule.interfaces_start_with_i.severity = error
+dotnet_naming_rule.interfaces_start_with_i.symbols = interface_symbol
+dotnet_naming_rule.interfaces_start_with_i.style = prefix_i
+dotnet_naming_symbols.interface_symbol.applicable_kinds = interface
+dotnet_naming_style.prefix_i.capitalization = pascal_case
+dotnet_naming_style.prefix_i.required_prefix = I
+
+# Analyzer severities
+dotnet_diagnostic.CA1014.severity = none      # CLSCompliant
+dotnet_diagnostic.CA1848.severity = suggestion # LoggerMessage delegates
+dotnet_diagnostic.CA2007.severity = none      # ConfigureAwait in app code
+dotnet_diagnostic.CA1062.severity = none      # Guard clauses (Nullable handles it)
+dotnet_diagnostic.IDE0058.severity = none     # Expression value is never used
+dotnet_diagnostic.IDE0290.severity = suggestion # Primary constructor
+
+# Appsettings / JSON
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.{xml,csproj,props,targets}]
+indent_size = 2
+
+[*.sh]
+end_of_line = lf
+indent_size = 2
+
+[*.sql]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

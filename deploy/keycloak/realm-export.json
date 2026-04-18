@@ -1,0 +1,34 @@
+{
+  "realm": "platform-wallet",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "clients": [
+    {
+      "clientId": "ledger-service-client",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "secret": "Mb5VptAg6w0kTPYgQFladAZOMMo0hBQFpjjL/bctf24=",
+      "defaultClientScopes": ["LedgerRead", "LedgerWrite"]
+    },
+    {
+      "clientId": "ops-console",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "redirectUris": ["http://localhost:8080/console/*"],
+      "defaultClientScopes": ["LedgerRead", "LedgerAdmin"]
+    }
+  ],
+  "clientScopes": [
+    { "name": "LedgerRead",  "protocol": "openid-connect" },
+    { "name": "LedgerWrite", "protocol": "openid-connect" },
+    { "name": "LedgerAdmin", "protocol": "openid-connect" }
+  ]
+}
