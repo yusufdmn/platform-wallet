@@ -1,0 +1,41 @@
+syntax = "proto3";
+option csharp_namespace = "PlatformWallet.Grpc.Protos";
+package platformwallet.ledger.v1;
+
+service LedgerReader {
+  rpc GetAccountBalance (GetAccountBalanceRequest) returns (GetAccountBalanceResponse);
+  rpc GetPostings       (GetPostingsRequest)        returns (GetPostingsResponse);
+}
+
+message GetAccountBalanceRequest {
+  string account_id = 1;
+}
+
+message GetAccountBalanceResponse {
+  string account_id  = 1;
+  string asset       = 2;
+  string balance     = 3;  // decimal serialized as string
+  string held_amount = 4;
+}
+
+message GetPostingsRequest {
+  string account_id = 1;
+  int32  page       = 2;
+  int32  page_size  = 3;
+}
+
+message GetPostingsResponse {
+  repeated PostingDto postings    = 1;
+  int32               total_count = 2;
+}
+
+message PostingDto {
+  string id            = 1;
+  string tx_id         = 2;
+  string account_id    = 3;
+  string asset         = 4;
+  string amount_signed = 5;  // decimal as string
+  string entry_kind    = 6;  // "Debit" | "Credit"
+  string phase         = 7;  // "Hold" | "Capture" | "Void" | "Mint" | "Burn" | "Transfer"
+  string created_at    = 8;  // ISO 8601
+}

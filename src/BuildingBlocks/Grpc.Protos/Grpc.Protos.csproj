@@ -14,10 +14,8 @@
     </PackageReference>
   </ItemGroup>
 
-  <!--
-    .proto files live under Protos/. Add them with <Protobuf Include="Protos\ledger.proto" GrpcServices="Both" />
-    once contracts are authored. GrpcServices=Both generates client + server stubs; servers use "Server",
-    clients use "Client". Defaults to Both so consumers pick as needed.
-  -->
+  <ItemGroup>
+    <Protobuf Include="Protos\ledger.proto" GrpcServices="Both" />
+  </ItemGroup>
 
 </Project>
