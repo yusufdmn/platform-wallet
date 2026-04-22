@@ -12,12 +12,22 @@ processors:
     send_batch_size: 512
 
 exporters:
+  # Traces → Jaeger
   otlp/jaeger:
     endpoint: jaeger:4317
     tls:
       insecure: true
+
+  # Logs → Seq (OTLP HTTP ingest, available since Seq 2023.4)
+  otlphttp/seq:
+    endpoint: http://seq:80/ingest/otlp
+    tls:
+      insecure: true
+
+  # Metrics → Prometheus scrape endpoint (Prometheus scrapes :8889 on this collector)
   prometheus:
     endpoint: 0.0.0.0:8889
+
   debug:
     verbosity: basic
 
@@ -31,3 +41,7 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [prometheus, debug]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/seq, debug]
