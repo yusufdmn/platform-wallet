@@ -3,14 +3,29 @@
     <RootNamespace>PlatformWallet.TransactionIntake.Infrastructure</RootNamespace>
     <AssemblyName>PlatformWallet.TransactionIntake.Infrastructure</AssemblyName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>TransactionIntake.IntegrationTests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\TransactionIntake.Domain\TransactionIntake.Domain.csproj" />
     <ProjectReference Include="..\TransactionIntake.Application\TransactionIntake.Application.csproj" />
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="MassTransit.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="DotNetEnv" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Options" />
   </ItemGroup>
 </Project>

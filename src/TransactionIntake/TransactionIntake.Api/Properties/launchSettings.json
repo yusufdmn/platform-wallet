@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "TransactionIntake.Api": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:14035;http://localhost:14040"
+    }
+  }
+}
