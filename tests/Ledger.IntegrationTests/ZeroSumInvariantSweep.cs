@@ -1,32 +1,41 @@
+using Dapper;
 using FluentAssertions;
+using Npgsql;
+using PlatformWallet.Ledger.IntegrationTests.Fixtures;
 using Xunit;
 
 namespace PlatformWallet.Ledger.IntegrationTests;
 
-/// <summary>
-/// Scaffold of the integration-test invariant sweep from TheMainPlan.md §7 step 12.
-/// After every happy-path, compensation-path, mint, burn and retry integration
-/// test runs, this assertion MUST pass against ledger_db:
-///
-///   SELECT tx_id, phase, SUM(amount_signed)
-///   FROM postings GROUP BY tx_id, phase
-///   HAVING SUM(amount_signed) &lt;&gt; 0;   -- zero rows expected
-///
-/// Plus: every (tx_id, phase) pair must have exactly 2 rows.
-///
-/// Once the Testcontainers Postgres fixture + LedgerDbContext are authored,
-/// this test evolves into an <see cref="IAsyncDisposable"/> fixture teardown that
-/// runs the sweep across the whole integration test run.
-/// Tracked by `ledger-invariant-checker` subagent.
-/// </summary>
-[Trait("Category", "Integration")]
-public class ZeroSumInvariantSweep
+[Collection(LedgerIntegrationGroup.Name)]
+public class ZeroSumInvariantSweep(LedgerIntegrationFixture fixture)
 {
-    [Fact(Skip = "Enabled once Testcontainers Postgres fixture + schema are in place.")]
-    public void Every_tx_phase_pair_sums_to_zero_and_has_exactly_two_rows()
+    [Fact]
+    public async Task Every_tx_phase_pair_sums_to_zero()
     {
-        // TODO: open Dapper connection to the test container's ledger_db,
-        //       assert both invariant queries return empty / two rows.
-        false.Should().BeTrue("placeholder for the real sweep");
+        await using var conn = new NpgsqlConnection(fixture.ConnectionString);
+
+        var violations = await conn.QueryAsync<(Guid TxId, string Phase, decimal Sum)>("""
+            SELECT tx_id, phase, SUM(amount_signed) AS sum
+            FROM postings
+            GROUP BY tx_id, phase
+            HAVING SUM(amount_signed) <> 0
+            """);
+
+        violations.Should().BeEmpty("every (tx_id, phase) pair must sum to zero");
+    }
+
+    [Fact]
+    public async Task Every_tx_phase_pair_has_exactly_two_rows()
+    {
+        await using var conn = new NpgsqlConnection(fixture.ConnectionString);
+
+        var violations = await conn.QueryAsync<(Guid TxId, string Phase, int Count)>("""
+            SELECT tx_id, phase, COUNT(*) AS count
+            FROM postings
+            GROUP BY tx_id, phase
+            HAVING COUNT(*) <> 2
+            """);
+
+        violations.Should().BeEmpty("every (tx_id, phase) pair must have exactly 2 postings");
     }
 }

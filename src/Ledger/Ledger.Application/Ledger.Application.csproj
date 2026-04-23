@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Ledger.Domain\Ledger.Domain.csproj" />
     <ProjectReference Include="..\..\BuildingBlocks\Contracts\Contracts.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Grpc.Protos\Grpc.Protos.csproj" />
   </ItemGroup>
 
   <ItemGroup>

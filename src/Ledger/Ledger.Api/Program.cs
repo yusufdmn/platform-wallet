@@ -1,20 +1,63 @@
+using DotNetEnv;
+using MassTransit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using PlatformWallet.Ledger.Application.Consumers;
+using PlatformWallet.Ledger.Application.GrpcServices;
+using PlatformWallet.Ledger.Infrastructure;
+using PlatformWallet.Ledger.Infrastructure.Persistence;
 using PlatformWallet.Observability;
+
+Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Observability is wired in every service via the single BuildingBlocks extension.
-// Do not add homegrown OTel wiring — enforced by `otel-wiring-reviewer`.
+builder.Host.UsePlatformWalletLogging("ledger-service");
 builder.Services.AddPlatformWalletObservability(builder.Configuration, "ledger-service");
 
-// TODO: AddAuthentication(JwtBearer), AddDbContext<LedgerDbContext>, AddMassTransit,
-//       AddGrpc, endpoints. Wired during build-order step 3 in TheMainPlan.md §6.1.
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(o =>
+    {
+        o.Authority            = builder.Configuration["KEYCLOAK_AUTHORITY"];
+        o.Audience             = "platform-wallet-api";
+        o.RequireHttpsMetadata = false;
+    });
+builder.Services.AddAuthorization();
 
+builder.Services.AddLedgerInfrastructure(builder.Configuration);
+
+builder.Services.AddMassTransit(x =>
+{
+    x.AddConsumer<MintFundsConsumer>();
+
+    x.AddEntityFrameworkOutbox<LedgerDbContext>(o =>
+    {
+        o.UsePostgres();
+        o.UseBusOutbox();
+    });
+
+    x.UsingRabbitMq((ctx, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RABBITMQ_HOST"], h =>
+        {
+            h.Username(builder.Configuration["RABBITMQ_DEFAULT_USER"]!);
+            h.Password(builder.Configuration["RABBITMQ_DEFAULT_PASSWORD"]!);
+        });
+
+        cfg.ConfigureEndpoints(ctx);
+    });
+});
+
+builder.Services.AddGrpc();
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapGrpcService<LedgerGrpcService>();
 app.MapHealthChecks("/healthz");
-app.MapGet("/", () => Results.Ok(new { service = "ledger-service", status = "scaffold" }));
 
 app.Run();
 
