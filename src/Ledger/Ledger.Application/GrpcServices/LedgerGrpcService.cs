@@ -1,3 +1,4 @@
+using System.Globalization;
 using Grpc.Core;
 using PlatformWallet.Grpc.Protos;
 using PlatformWallet.Ledger.Application.Persistence;
@@ -25,8 +26,8 @@ public sealed class LedgerGrpcService(IAccountQueries accountQueries) : LedgerRe
         {
             AccountId  = dto.Id.ToString(),
             Asset      = dto.Asset,
-            Balance    = dto.Balance.ToString("G"),
-            HeldAmount = dto.HeldAmount.ToString("G"),
+            Balance    = dto.Balance.ToString("G", CultureInfo.InvariantCulture),
+            HeldAmount = dto.HeldAmount.ToString("G", CultureInfo.InvariantCulture),
         };
     }
 

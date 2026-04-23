@@ -22,6 +22,9 @@ public sealed class MintFundsConsumer(
         var creditAccount = await repository.GetAccountAsync(msg.CreditAccountId, ct)
             ?? throw new InvalidOperationException($"Account {msg.CreditAccountId} not found.");
 
+        ValidateAsset(world, msg.Asset);
+        ValidateAsset(creditAccount, msg.Asset);
+
         var (debit, credit) = PostingPairBuilder.BuildMint(msg.CorrelationId, msg.CreditAccountId, msg.Amount, msg.Asset);
 
         world.ApplyDebit(msg.Amount);
@@ -37,5 +40,14 @@ public sealed class MintFundsConsumer(
         logger.LogInformation(
             "Minted {Amount} {Asset} to account {AccountId} for tx {CorrelationId}",
             msg.Amount, msg.Asset, msg.CreditAccountId, msg.CorrelationId);
+    }
+
+    private static void ValidateAsset(Account account, string expectedAsset)
+    {
+        if (!string.Equals(account.Asset, expectedAsset, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                $"Asset mismatch on account {account.Id}: account asset='{account.Asset}', message asset='{expectedAsset}'.");
+        }
     }
 }

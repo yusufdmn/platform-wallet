@@ -58,6 +58,12 @@ public class Account
     public void ReleaseHold(decimal amount)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        if (HeldAmount < amount)
+        {
+            throw new InvalidOperationException(
+                $"Insufficient held amount on account {Id}: held={HeldAmount}, requested={amount}");
+        }
+
         HeldAmount -= amount;
         Balance    += amount;
     }
@@ -65,6 +71,12 @@ public class Account
     public void CaptureHeld(decimal amount)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        if (HeldAmount < amount)
+        {
+            throw new InvalidOperationException(
+                $"Insufficient held amount on account {Id}: held={HeldAmount}, requested={amount}");
+        }
+
         HeldAmount -= amount;
     }
 }
