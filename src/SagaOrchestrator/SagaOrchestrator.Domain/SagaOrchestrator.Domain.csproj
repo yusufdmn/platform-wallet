@@ -9,5 +9,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MassTransit.Abstractions" />
+    <PackageReference Include="MassTransit" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
 </Project>
