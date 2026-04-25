@@ -29,6 +29,9 @@ builder.Services.AddLedgerInfrastructure(builder.Configuration);
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<MintFundsConsumer>();
+    x.AddConsumer<HoldFundsConsumer>();
+    x.AddConsumer<CaptureTransferConsumer>();
+    x.AddConsumer<VoidHoldConsumer>();
 
     x.AddEntityFrameworkOutbox<LedgerDbContext>(o =>
     {

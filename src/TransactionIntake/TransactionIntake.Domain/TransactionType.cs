@@ -1,3 +1,3 @@
 namespace PlatformWallet.TransactionIntake.Domain;
 
-public enum TransactionType { Mint, Burn, Hold }
+public enum TransactionType { Mint, Burn, Hold, Transfer }

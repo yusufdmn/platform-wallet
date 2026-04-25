@@ -12,6 +12,7 @@ public sealed class TransactionSagaState : SagaStateMachineInstance
     public decimal Amount         { get; set; }
     public string Asset           { get; set; } = null!;
     public string? FailureReason  { get; set; }
+    public bool IsCompensating    { get; set; }
     public DateTimeOffset CreatedAt  { get; set; }
     public DateTimeOffset UpdatedAt  { get; set; }
     public byte[] RowVersion        { get; set; } = [];

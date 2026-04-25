@@ -8,6 +8,7 @@ public class Transaction
     public TransactionStatus Status             { get; private set; }
     public decimal           Amount             { get; private set; }
     public string            Asset              { get; private set; } = null!;
+    public Guid?             DebitAccountId     { get; private set; }
     public Guid              CreditAccountId    { get; private set; }
     public string            IdempotencyKeyHash { get; private set; } = null!;
     public DateTimeOffset    CreatedAt          { get; private set; }
@@ -15,17 +16,14 @@ public class Transaction
     private Transaction() { }
 
     public static Transaction CreateMint(
-        Guid   id,
-        Guid   correlationId,
+        Guid    id,
+        Guid    correlationId,
         decimal amount,
         string  asset,
-        Guid   creditAccountId,
+        Guid    creditAccountId,
         string  idempotencyKeyHash)
     {
-        if (amount <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(amount), "Amount must be positive.");
-        }
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
 
         return new Transaction
         {
@@ -41,8 +39,31 @@ public class Transaction
         };
     }
 
-    public void Transition(TransactionStatus newStatus)
+    public static Transaction CreateTransfer(
+        Guid    id,
+        Guid    correlationId,
+        decimal amount,
+        string  asset,
+        Guid    debitAccountId,
+        Guid    creditAccountId,
+        string  idempotencyKeyHash)
     {
-        Status = newStatus;
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+
+        return new Transaction
+        {
+            Id                 = id,
+            CorrelationId      = correlationId,
+            Type               = TransactionType.Transfer,
+            Status             = TransactionStatus.Pending,
+            Amount             = amount,
+            Asset              = asset,
+            DebitAccountId     = debitAccountId,
+            CreditAccountId    = creditAccountId,
+            IdempotencyKeyHash = idempotencyKeyHash,
+            CreatedAt          = DateTimeOffset.UtcNow,
+        };
     }
+
+    public void Transition(TransactionStatus newStatus) => Status = newStatus;
 }

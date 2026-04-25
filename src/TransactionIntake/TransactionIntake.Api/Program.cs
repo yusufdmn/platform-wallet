@@ -66,6 +66,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapMintEndpoint();
+app.MapTransferEndpoint();
+app.MapCaptureEndpoint();
+app.MapVoidEndpoint();
 app.MapHealthChecks("/healthz");
 
 app.Run();

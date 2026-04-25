@@ -222,6 +222,10 @@ namespace PlatformWallet.TransactionIntake.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("credit_account_id");
 
+                    b.Property<Guid?>("DebitAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("debit_account_id");
+
                     b.Property<string>("IdempotencyKeyHash")
                         .IsRequired()
                         .HasMaxLength(64)
