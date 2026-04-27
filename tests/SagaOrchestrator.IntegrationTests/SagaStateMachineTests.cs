@@ -1,4 +1,10 @@
 using FluentAssertions;
+using MassTransit;
+using MassTransit.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using PlatformWallet.Contracts.Commands;
+using PlatformWallet.Contracts.Events;
+using PlatformWallet.SagaOrchestrator.Domain;
 using Xunit;
 
 namespace PlatformWallet.SagaOrchestrator.IntegrationTests;
@@ -6,17 +12,139 @@ namespace PlatformWallet.SagaOrchestrator.IntegrationTests;
 [Trait("Category", "Integration")]
 public class SagaStateMachineTests
 {
-    [Fact(Skip = "Enabled once TransactionSagaStateMachine is authored in Domain.")]
-    public void Happy_path_transitions_Submitted_to_Held_to_Captured()
+    private static ServiceProvider BuildProvider()
     {
-        // TODO: use MassTransit's ITestHarness + Testcontainers Postgres.
-        // Assert state after each event; pessimistic lock + partitioner behavior.
-        true.Should().BeTrue();
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddMassTransitTestHarness(x =>
+        {
+            x.AddSagaStateMachine<TransactionSagaStateMachine, TransactionSagaState>()
+                .InMemoryRepository();
+        });
+
+        return services.BuildServiceProvider();
     }
 
-    [Fact(Skip = "Enabled once compensation transitions are wired.")]
-    public void Capture_failure_triggers_VoidHold_and_lands_in_Failed()
+    [Fact]
+    public async Task Happy_path_transitions_Submitted_to_Processing_to_Completed_for_Mint()
     {
-        true.Should().BeTrue();
+        await using var sp = BuildProvider();
+
+        var harness     = sp.GetRequiredService<ITestHarness>();
+        await harness.Start();
+
+        try
+        {
+            var sagaHarness   = harness.GetSagaStateMachineHarness<TransactionSagaStateMachine, TransactionSagaState>();
+            var correlationId = NewId.NextGuid();
+
+            await harness.Bus.Publish(new TransactionSubmitted(
+                CorrelationId:   correlationId,
+                TransactionType: "Mint",
+                DebitAccountId:  Guid.Empty,
+                CreditAccountId: Guid.NewGuid(),
+                Amount:          100m,
+                Asset:           "USD"));
+
+            // Saga should be in Processing after receiving TransactionSubmitted
+            (await sagaHarness.Exists(correlationId, machine => machine.Processing,
+                TimeSpan.FromSeconds(10)))
+                .Should().NotBeNull("saga must transition to Processing after TransactionSubmitted");
+
+            await harness.Bus.Publish(new FundsMinted(correlationId));
+
+            // After FundsMinted, saga should be in Completed
+            (await sagaHarness.Exists(correlationId, machine => machine.Completed,
+                TimeSpan.FromSeconds(10)))
+                .Should().NotBeNull("saga must reach Completed state after FundsMinted");
+
+            await harness.InactivityTask;
+
+            // Verify TransactionMinted was published by the saga
+            (await harness.Published.Any<TransactionMinted>(x =>
+                x.Context.Message.CorrelationId == correlationId))
+                .Should().BeTrue("saga must publish TransactionMinted on completion");
+        }
+        finally
+        {
+            await harness.Stop();
+        }
+    }
+
+    [Fact]
+    public async Task Capture_failure_triggers_VoidHold_and_lands_in_Failed()
+    {
+        await using var sp = BuildProvider();
+
+        var harness = sp.GetRequiredService<ITestHarness>();
+        await harness.Start();
+
+        try
+        {
+            var sagaHarness   = harness.GetSagaStateMachineHarness<TransactionSagaStateMachine, TransactionSagaState>();
+            var correlationId = NewId.NextGuid();
+            var debitAccount  = Guid.NewGuid();
+            var creditAccount = Guid.NewGuid();
+
+            // Start transfer saga
+            await harness.Bus.Publish(new TransactionSubmitted(
+                CorrelationId:   correlationId,
+                TransactionType: "Transfer",
+                DebitAccountId:  debitAccount,
+                CreditAccountId: creditAccount,
+                Amount:          50m,
+                Asset:           "USD"));
+
+            (await sagaHarness.Exists(correlationId, machine => machine.Processing,
+                TimeSpan.FromSeconds(10)))
+                .Should().NotBeNull("saga must be Processing after initial submit");
+
+            // Funds held — saga moves to Held
+            await harness.Bus.Publish(new FundsHeld(correlationId));
+
+            (await sagaHarness.Exists(correlationId, machine => machine.Held,
+                TimeSpan.FromSeconds(10)))
+                .Should().NotBeNull("saga must reach Held after FundsHeld");
+
+            // Capture requested — saga goes back to Processing, sends CaptureTransfer
+            await harness.Bus.Publish(new CaptureTransferRequested(correlationId));
+
+            (await sagaHarness.Exists(correlationId, machine => machine.Processing,
+                TimeSpan.FromSeconds(10)))
+                .Should().NotBeNull("saga must be Processing after CaptureTransferRequested");
+
+            // Simulate CaptureTransfer fault → saga compensates with VoidHold
+            await harness.Bus.Publish<Fault<CaptureTransfer>>(new
+            {
+                CorrelationId    = correlationId,
+                Message          = new CaptureTransfer(correlationId, debitAccount, creditAccount, 50m, "USD"),
+                Exceptions       = new[] { new { Message = "Insufficient funds" } },
+                Timestamp        = DateTimeOffset.UtcNow,
+                FaultId          = Guid.NewGuid(),
+                FaultedMessageId = Guid.NewGuid(),
+                MessageId        = Guid.NewGuid(),
+                Host             = new { },
+            });
+
+            // brief settle — saga publishes VoidHold and stays in Processing (IsCompensating=true)
+            await Task.Delay(500);
+
+            // Now send HoldVoided — saga lands in Failed
+            await harness.Bus.Publish(new HoldVoided(correlationId));
+
+            (await sagaHarness.Exists(correlationId, machine => machine.Failed,
+                TimeSpan.FromSeconds(10)))
+                .Should().NotBeNull("saga must land in Failed after capture compensation completes");
+
+            // TransactionFailed event must have been published
+            (await harness.Published.Any<TransactionFailed>(x =>
+                x.Context.Message.CorrelationId == correlationId))
+                .Should().BeTrue("saga must publish TransactionFailed on compensation path");
+        }
+        finally
+        {
+            await harness.Stop();
+        }
     }
 }

@@ -2,18 +2,21 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using PlatformWallet.Ledger.Infrastructure.Persistence;
+using PlatformWallet.SagaOrchestrator.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace PlatformWallet.Ledger.Infrastructure.Persistence.Migrations
+namespace PlatformWallet.SagaOrchestrator.Infrastructure.Persistence.Migrations
 {
-    [DbContext(typeof(LedgerDbContext))]
-    partial class LedgerDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(SagaDbContext))]
+    [Migration("20260427170912_FixRowVersionDefault")]
+    partial class FixRowVersionDefault
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -192,12 +195,16 @@ namespace PlatformWallet.Ledger.Infrastructure.Persistence.Migrations
                     b.ToTable("OutboxState");
                 });
 
-            modelBuilder.Entity("PlatformWallet.Ledger.Domain.Account", b =>
+            modelBuilder.Entity("PlatformWallet.SagaOrchestrator.Domain.TransactionSagaState", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<Guid>("CorrelationId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("correlation_id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(28,8)")
+                        .HasColumnName("amount");
 
                     b.Property<string>("Asset")
                         .IsRequired()
@@ -205,119 +212,55 @@ namespace PlatformWallet.Ledger.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(16)")
                         .HasColumnName("asset");
 
-                    b.Property<decimal>("Balance")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("balance");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<decimal>("HeldAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("held_amount");
+                    b.Property<Guid>("CreditAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("credit_account_id");
 
-                    b.Property<bool>("IsSystem")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_system");
-
-                    b.Property<string>("Metadata")
+                    b.Property<string>("CurrentState")
                         .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("metadata");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("current_state");
 
-                    b.Property<string>("Name")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name");
+                    b.Property<Guid?>("DebitAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("debit_account_id");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("failure_reason");
+
+                    b.Property<bool>("IsCompensating")
+                        .HasColumnType("boolean");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("bytea")
-                        .HasColumnName("row_version")
-                        .HasDefaultValueSql("'\\x00000000'::bytea");
+                        .HasColumnName("row_version");
 
-                    b.HasKey("Id");
-
-                    b.ToTable("accounts", null, t =>
-                        {
-                            t.HasCheckConstraint("ck_accounts_balance_floor", "is_system = true OR balance >= 0");
-
-                            t.HasCheckConstraint("ck_accounts_held_amount_floor", "held_amount >= 0");
-                        });
-                });
-
-            modelBuilder.Entity("PlatformWallet.Ledger.Domain.Posting", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
-
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("account_id");
-
-                    b.Property<decimal>("AmountSigned")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("amount_signed");
-
-                    b.Property<string>("Asset")
+                    b.Property<string>("TransactionType")
                         .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("asset");
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("transaction_type");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
+                    b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("updated_at");
 
-                    b.Property<string>("EntryKind")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("entry_kind");
+                    b.HasKey("CorrelationId");
 
-                    b.Property<string>("Phase")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("phase");
+                    b.HasIndex("CurrentState")
+                        .HasDatabaseName("IX_transaction_saga_states_current_state");
 
-                    b.Property<Guid>("TxId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tx_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TxId")
-                        .HasDatabaseName("ix_postings_tx");
-
-                    b.HasIndex("AccountId", "CreatedAt")
-                        .IsDescending(false, true)
-                        .HasDatabaseName("ix_postings_account_created");
-
-                    b.HasIndex("TxId", "AccountId", "Phase")
-                        .IsUnique()
-                        .HasDatabaseName("uq_posting_tx_account_phase");
-
-                    b.ToTable("postings", (string)null);
-                });
-
-            modelBuilder.Entity("PlatformWallet.Ledger.Domain.Posting", b =>
-                {
-                    b.HasOne("PlatformWallet.Ledger.Domain.Account", null)
-                        .WithMany()
-                        .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                    b.ToTable("transaction_saga_states", (string)null);
                 });
 #pragma warning restore 612, 618
         }

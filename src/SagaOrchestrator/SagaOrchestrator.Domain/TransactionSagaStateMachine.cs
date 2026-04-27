@@ -77,35 +77,38 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
     private void ConfigureTransitions(ILogger<TransactionSagaStateMachine> logger)
     {
         // ── Mint flow ─────────────────────────────────────────────────────────
+        // NOTE: Use `Publish(ctx => new T(...))` typed-factory overload, NOT
+        // `PublishAsync(ctx => ctx.Init<T>(...))`. The Init<T> path requires the
+        // message type to have a parameterless constructor (records with primary
+        // constructors do not). The typed factory bypasses the message initializer.
         Initially(
             When(TransactionSubmitted,
                 ctx => string.Equals(ctx.Message.TransactionType, MintTransactionType, StringComparison.OrdinalIgnoreCase))
                 .Then(ctx => InitialiseState(ctx.Saga, ctx.Message))
-                .PublishAsync(ctx => ctx.Init<MintFunds>(new MintFunds(
+                .Publish(ctx => new MintFunds(
                     ctx.Saga.CorrelationId,
                     ctx.Saga.CreditAccountId,
                     ctx.Saga.Amount,
-                    ctx.Saga.Asset)))
+                    ctx.Saga.Asset))
                 .TransitionTo(Processing),
 
             // ── Transfer flow (hold first) ────────────────────────────────────
             When(TransactionSubmitted,
                 ctx => string.Equals(ctx.Message.TransactionType, TransferTransactionType, StringComparison.OrdinalIgnoreCase))
                 .Then(ctx => InitialiseState(ctx.Saga, ctx.Message))
-                .PublishAsync(ctx => ctx.Init<HoldFunds>(new HoldFunds(
+                .Publish(ctx => new HoldFunds(
                     ctx.Saga.CorrelationId,
                     ctx.Saga.DebitAccountId!.Value,
                     ctx.Saga.CreditAccountId,
                     ctx.Saga.Amount,
-                    ctx.Saga.Asset)))
+                    ctx.Saga.Asset))
                 .TransitionTo(Processing));
 
         During(Processing,
             // Mint success
             When(FundsMinted)
                 .Then(ctx => Touch(ctx.Saga))
-                .PublishAsync(ctx => ctx.Init<TransactionMinted>(
-                    new TransactionMinted(ctx.Saga.CorrelationId)))
+                .Publish(ctx => new TransactionMinted(ctx.Saga.CorrelationId))
                 .TransitionTo(Completed)
                 .Then(ctx => logger.LogInformation(
                     "Saga {CorrelationId}: mint completed", ctx.Saga.CorrelationId)),
@@ -113,8 +116,7 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
             // Mint fault
             When(MintFundsFaulted)
                 .Then(ctx => Fail(ctx.Saga, FirstException(ctx.Message)))
-                .PublishAsync(ctx => ctx.Init<TransactionFailed>(
-                    new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!)))
+                .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
                 .TransitionTo(Failed)
                 .Then(ctx => logger.LogError(
                     "Saga {CorrelationId}: mint failed — {Reason}",
@@ -130,8 +132,7 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
             // Hold fault → fail immediately
             When(HoldFundsFaulted)
                 .Then(ctx => Fail(ctx.Saga, FirstException(ctx.Message)))
-                .PublishAsync(ctx => ctx.Init<TransactionFailed>(
-                    new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!)))
+                .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
                 .TransitionTo(Failed)
                 .Then(ctx => logger.LogError(
                     "Saga {CorrelationId}: hold failed — {Reason}",
@@ -141,30 +142,29 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
             // Capture requested
             When(CaptureRequested)
                 .Then(ctx => Touch(ctx.Saga))
-                .PublishAsync(ctx => ctx.Init<CaptureTransfer>(new CaptureTransfer(
+                .Publish(ctx => new CaptureTransfer(
                     ctx.Saga.CorrelationId,
                     ctx.Saga.DebitAccountId!.Value,
                     ctx.Saga.CreditAccountId,
                     ctx.Saga.Amount,
-                    ctx.Saga.Asset)))
+                    ctx.Saga.Asset))
                 .TransitionTo(Processing),
 
             // Void requested — compensate
             When(VoidRequested)
                 .Then(ctx => Touch(ctx.Saga))
-                .PublishAsync(ctx => ctx.Init<VoidHold>(new VoidHold(
+                .Publish(ctx => new VoidHold(
                     ctx.Saga.CorrelationId,
                     ctx.Saga.DebitAccountId!.Value,
                     ctx.Saga.Amount,
-                    ctx.Saga.Asset)))
+                    ctx.Saga.Asset))
                 .TransitionTo(Processing));
 
         During(Processing,
             // Capture success
             When(TransferCaptured)
                 .Then(ctx => Touch(ctx.Saga))
-                .PublishAsync(ctx => ctx.Init<TransactionCaptured>(
-                    new TransactionCaptured(ctx.Saga.CorrelationId)))
+                .Publish(ctx => new TransactionCaptured(ctx.Saga.CorrelationId))
                 .TransitionTo(Completed)
                 .Then(ctx => logger.LogInformation(
                     "Saga {CorrelationId}: transfer captured", ctx.Saga.CorrelationId)),
@@ -176,11 +176,11 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                     Fail(ctx.Saga, FirstException(ctx.Message));
                     ctx.Saga.IsCompensating = true;
                 })
-                .PublishAsync(ctx => ctx.Init<VoidHold>(new VoidHold(
+                .Publish(ctx => new VoidHold(
                     ctx.Saga.CorrelationId,
                     ctx.Saga.DebitAccountId!.Value,
                     ctx.Saga.Amount,
-                    ctx.Saga.Asset)))
+                    ctx.Saga.Asset))
                 .Then(ctx => logger.LogError(
                     "Saga {CorrelationId}: capture failed, voiding hold — {Reason}",
                     ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
@@ -188,8 +188,7 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
             // VoidHold fault → compensate failed, mark as failed
             When(VoidHoldFaulted)
                 .Then(ctx => Fail(ctx.Saga, FirstException(ctx.Message)))
-                .PublishAsync(ctx => ctx.Init<TransactionFailed>(
-                    new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!)))
+                .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
                 .TransitionTo(Failed)
                 .Then(ctx => logger.LogError(
                     "Saga {CorrelationId}: void hold failed — {Reason}",
@@ -200,15 +199,13 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                 .Then(ctx => Touch(ctx.Saga))
                 .IfElse(ctx => ctx.Saga.IsCompensating,
                     binder => binder
-                        .PublishAsync(ctx => ctx.Init<TransactionFailed>(
-                            new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!)))
+                        .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
                         .TransitionTo(Failed)
                         .Then(ctx => logger.LogError(
                             "Saga {CorrelationId}: capture compensated via void — failed",
                             ctx.Saga.CorrelationId)),
                     binder => binder
-                        .PublishAsync(ctx => ctx.Init<TransactionVoided>(
-                            new TransactionVoided(ctx.Saga.CorrelationId)))
+                        .Publish(ctx => new TransactionVoided(ctx.Saga.CorrelationId))
                         .TransitionTo(Completed)
                         .Then(ctx => logger.LogInformation(
                             "Saga {CorrelationId}: hold voided by user request",

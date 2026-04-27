@@ -38,7 +38,8 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 
         builder.Property(a => a.RowVersion)
             .HasColumnName("row_version")
-            .IsRowVersion();
+            .IsRowVersion()
+            .HasDefaultValueSql("'\\x00000000'::bytea");
 
         builder.ToTable(t =>
         {
