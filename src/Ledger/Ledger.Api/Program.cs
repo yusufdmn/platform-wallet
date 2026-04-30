@@ -13,12 +13,10 @@ Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Port 14038 = HTTP/1.1 for REST (health, admin).
-// Port 14099 = HTTP/2 h2c for gRPC (Http1AndHttp2 without TLS falls back to HTTP/1.1 only).
 builder.WebHost.ConfigureKestrel(o =>
 {
-    o.ListenLocalhost(14038, ep => ep.Protocols = HttpProtocols.Http1);
-    o.ListenLocalhost(14099, ep => ep.Protocols = HttpProtocols.Http2);
+    o.ListenAnyIP(8080, e => e.Protocols = HttpProtocols.Http1);   // REST + healthcheck
+    o.ListenAnyIP(9090, e => e.Protocols = HttpProtocols.Http2);   // gRPC (h2c)
 });
 
 builder.Host.UsePlatformWalletLogging("ledger-service");

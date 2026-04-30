@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PlatformWallet.BalanceQuery.Application.Queries;
@@ -28,8 +29,14 @@ public static class ServiceCollectionExtensions
         var ledgerGrpcUrl = configuration["LEDGER_GRPC_URL"]
             ?? throw new InvalidOperationException("LEDGER_GRPC_URL is required");
 
+        AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+
         services.AddGrpcClient<LedgerReader.LedgerReaderClient>(o =>
-            o.Address = new Uri(ledgerGrpcUrl));
+            o.Address = new Uri(ledgerGrpcUrl))
+            .ConfigureChannel(o =>
+            {
+                o.HttpHandler = new SocketsHttpHandler { EnableMultipleHttp2Connections = true };
+            });
     }
 
     private static void AddFusionCache(IServiceCollection services, IConfiguration configuration)

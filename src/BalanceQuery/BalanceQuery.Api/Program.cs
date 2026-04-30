@@ -6,13 +6,6 @@ using PlatformWallet.Observability;
 
 Env.TraversePath().Load();
 
-var ledgerGrpcUrl = Environment.GetEnvironmentVariable("LEDGER_GRPC_URL") ?? string.Empty;
-if (Uri.TryCreate(ledgerGrpcUrl, UriKind.Absolute, out var ledgerGrpcUri)
-    && ledgerGrpcUri.Scheme == Uri.UriSchemeHttp)
-{
-    AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
-}
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UsePlatformWalletLogging("balance-query");

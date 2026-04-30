@@ -4,7 +4,7 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-COPY Directory.Build.props Directory.Packages.props ./
+COPY Directory.Build.props Directory.Packages.props global.json ./
 COPY src/BuildingBlocks/Contracts/Contracts.csproj             src/BuildingBlocks/Contracts/
 COPY src/BuildingBlocks/Observability/Observability.csproj     src/BuildingBlocks/Observability/
 COPY src/WebhookDispatcher/WebhookDispatcher.Domain/WebhookDispatcher.Domain.csproj             src/WebhookDispatcher/WebhookDispatcher.Domain/

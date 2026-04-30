@@ -8,7 +8,6 @@ using System.Text.Json;
 var deliveries = new ConcurrentQueue<WebhookDelivery>();
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.UseUrls("http://localhost:9999");
 var app = builder.Build();
 
 app.MapPost("/webhook", async (HttpRequest req) =>

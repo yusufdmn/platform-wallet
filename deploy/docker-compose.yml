@@ -92,8 +92,8 @@ services:
       # BalanceQuery reads REDIS_CONNECTION (StackExchange.Redis format).
       # In this stack the Redis container is on the LAN server — use the .env value.
       REDIS_CONNECTION: ${REDIS_CONNECTION}
-      # gRPC to Ledger: override .env's localhost value with the Docker service name.
-      LEDGER_GRPC_URL: http://ledger:8080
+      # gRPC to Ledger: port 9090 is the h2c-only gRPC port (8080 is HTTP/1.1 REST).
+      LEDGER_GRPC_URL: http://ledger:9090
       KEYCLOAK_AUTHORITY: ${KEYCLOAK_AUTHORITY}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_SERVICE_NAME: balance-query
@@ -133,6 +133,8 @@ services:
     build:
       context: ./webhook-sink
       dockerfile: Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:8080
     ports:
       - "9999:8080"
     healthcheck:
