@@ -58,7 +58,7 @@ MediatR, no MassTransit, no `HttpClient`, no ASP.NET Core. The only carve-out is
 `SagaOrchestrator.Domain`, which is allowed to reference `MassTransit.Abstractions`
 because the Automatonymous state machine *is* the domain in that service.
 
-### High-Level System Architechture
+### High-Level System Architecture
 
 <img width="1024" height="1536" alt="architecture_diagram2" src="https://github.com/user-attachments/assets/b7da726f-15e6-4f6d-83fe-7d4484d90051" />
 
