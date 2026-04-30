@@ -1,6 +1,6 @@
 # Platform Wallet
 
-> **Status: active development** — core transaction flows (Mint, Hold/Capture, Hold/Void) are implemented and passing end-to-end. See the [Roadmap](#roadmap) for what's in progress.
+> **Status: active development** — core transaction flows (Mint, Hold/Capture, Hold/Void) are implemented and passing end-to-end.
 
 A **Platform Wallet / Ledger-as-a-Service** built on .NET 8.
 It is a backend infrastructure component that platforms (gaming, e-commerce, SaaS,
