@@ -268,10 +268,6 @@ These four scenarios pass on the live compose stack (`tests/EndToEnd.Tests/FullS
   `BuildingBlocks/Contracts`.
 - `tests/Ledger.IntegrationTests` — runs the **zero-sum invariant sweep** in
   fixture teardown. This is the single correctness gate for the whole system.
-- Per-area subagents in `.claude/agents/` — `ledger-invariant-checker`,
-  `masstransit-saga-reviewer`, `auth-scope-reviewer`, `contracts-purity-reviewer`,
-  `dotnet-clean-architect`, `otel-wiring-reviewer`, `sql-migration-reviewer` —
-  each enforces a slice of the layering / messaging / auth contract on every PR.
 
 ---
 
@@ -311,17 +307,10 @@ PlatformWallet/
 │   ├── keycloak/realm-export.json   Realm + clients + roles + seed users
 │   ├── otel/, prometheus/, grafana/ Observability config
 │   └── webhook-sink/                Tiny .NET app that records inbound deliveries (used by E2E tests)
-├── docs/adr/                        Architecture Decision Records
-├── postman/                         Postman collection — 🔧 planned
 ├── .env.example                     Documents every required env var
-├── CLAUDE.md                        Repo-wide engineering guardrails
 ├── Directory.Packages.props         Central Package Management
 └── PlatformWallet.sln
 ```
-
-Each service has its own `CLAUDE.md` next to it documenting service-specific
-guardrails (e.g. `src/Ledger/CLAUDE.md` documents the append-only contract on
-`postings`, `src/ApiGateway/CLAUDE.md` documents the immutable middleware order).
 
 ---
 
