@@ -2,19 +2,29 @@ using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using PlatformWallet.Contracts.Events;
+using PlatformWallet.TransactionIntake.Application.Persistence;
+using PlatformWallet.TransactionIntake.Domain;
 
 namespace PlatformWallet.TransactionIntake.Application.Commands.RequestVoid;
 
 public sealed class RequestVoidHandler(
-    IPublishEndpoint           publishEndpoint,
+    ITransactionRepository      transactionRepo,
+    IPublishEndpoint            publishEndpoint,
     ILogger<RequestVoidHandler> logger)
     : IRequestHandler<RequestVoidCommand>
 {
     public async Task Handle(RequestVoidCommand request, CancellationToken cancellationToken)
     {
+        var tx = await transactionRepo.FindByIdAsync(request.CorrelationId, cancellationToken)
+            ?? throw new InvalidOperationException($"Transaction {request.CorrelationId} not found");
+
+        tx.Transition(TransactionStatus.VoidRequested);
+
         await publishEndpoint.Publish(
             new VoidRequested(request.CorrelationId),
             cancellationToken);
+
+        await transactionRepo.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation(
             "Void requested for tx {CorrelationId}", request.CorrelationId);

@@ -28,7 +28,12 @@ builder.Services
     });
 
 builder.Services.AddAuthorization(o =>
-    o.AddPolicy("ledger:read", p => p.RequireClaim("scope", "ledger:read")));
+{
+    o.AddPolicy("ledger:read", p => p.RequireAssertion(ctx =>
+        (ctx.User.FindFirst("scope")?.Value ?? "").Split(' ').Contains("ledger:read")));
+    o.AddPolicy("ledger:admin", p => p.RequireAssertion(ctx =>
+        (ctx.User.FindFirst("scope")?.Value ?? "").Split(' ').Contains("ledger:admin")));
+});
 
 builder.Services.AddBalanceQueryInfrastructure(builder.Configuration);
 

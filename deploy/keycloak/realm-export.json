@@ -19,7 +19,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "admin-password",
+          "value": "${OPS_ADMIN_PASSWORD}",
           "temporary": false
         }
       ]
@@ -51,9 +51,9 @@
       "serviceAccountsEnabled": true,
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
-      "secret": "ledger-service-secret",
+      "secret": "${KEYCLOAK_CLIENT_SECRET}",
       "defaultClientScopes": [],
-      "optionalClientScopes": ["ledger:read", "ledger:write"],
+      "optionalClientScopes": ["ledger:read", "ledger:write", "ledger:admin"],
       "protocolMappers": [
         {
           "name": "platform-wallet-audience",

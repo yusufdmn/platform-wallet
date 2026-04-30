@@ -19,8 +19,12 @@ public sealed class MintFundsConsumer(
         var world = await repository.GetAccountAsync(SystemAccounts.WorldId, ct)
             ?? throw new InvalidOperationException("@world system account not found — run migrations.");
 
-        var creditAccount = await repository.GetAccountAsync(msg.CreditAccountId, ct)
-            ?? throw new InvalidOperationException($"Account {msg.CreditAccountId} not found.");
+        var creditAccount = await repository.GetAccountAsync(msg.CreditAccountId, ct);
+        if (creditAccount is null)
+        {
+            creditAccount = Account.Create(msg.CreditAccountId, name: null, asset: msg.Asset);
+            repository.AddAccount(creditAccount);
+        }
 
         ValidateAsset(world, msg.Asset);
         ValidateAsset(creditAccount, msg.Asset);

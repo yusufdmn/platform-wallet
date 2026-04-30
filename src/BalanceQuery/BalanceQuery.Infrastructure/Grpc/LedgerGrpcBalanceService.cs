@@ -20,9 +20,18 @@ internal sealed class LedgerGrpcBalanceService(
     {
         var cacheKey = BuildCacheKey(accountId);
 
-        return await cache.GetOrSetAsync(
+        return await cache.GetOrSetAsync<AccountBalance?>(
             cacheKey,
-            async token => await FetchFromLedgerAsync(accountId, token),
+            async (ctx, token) =>
+            {
+                var result = await FetchFromLedgerAsync(accountId, token);
+                if (result is null)
+                {
+                    ctx.Options.SkipMemoryCache      = true;
+                    ctx.Options.SkipDistributedCache = true;
+                }
+                return result;
+            },
             options => options.SetDuration(CacheDuration),
             token: ct);
     }

@@ -1,7 +1,7 @@
 using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using PlatformWallet.Contracts.Commands;
+using PlatformWallet.Contracts.Events;
 using PlatformWallet.TransactionIntake.Application.Persistence;
 using PlatformWallet.TransactionIntake.Domain;
 
@@ -67,7 +67,13 @@ public sealed class SubmitMintHandler(
         Guid              transactionId,
         CancellationToken cancellationToken) =>
         await publishEndpoint.Publish(
-            new MintFunds(transactionId, request.CreditAccountId, request.Amount, request.Asset),
+            new TransactionSubmitted(
+                transactionId,
+                TransactionType.Mint.ToString(),
+                DebitAccountId:  Guid.Empty,
+                CreditAccountId: request.CreditAccountId,
+                request.Amount,
+                request.Asset),
             cancellationToken);
 
     private static SubmitMintResult DuplicateResult(Guid transactionId) =>

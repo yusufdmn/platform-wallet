@@ -6,6 +6,7 @@ using PlatformWallet.Observability;
 using PlatformWallet.TransactionIntake.Api.Endpoints;
 using PlatformWallet.TransactionIntake.Application.Behaviours;
 using PlatformWallet.TransactionIntake.Application.Commands.SubmitMint;
+using PlatformWallet.TransactionIntake.Application.Consumers;
 using PlatformWallet.TransactionIntake.Infrastructure;
 using PlatformWallet.TransactionIntake.Infrastructure.Persistence;
 
@@ -27,7 +28,14 @@ builder.Services
     });
 
 builder.Services.AddAuthorization(o =>
-    o.AddPolicy("ledger:write", p => p.RequireClaim("scope", "ledger:write")));
+{
+    o.AddPolicy("ledger:write", p => p.RequireAssertion(ctx =>
+        (ctx.User.FindFirst("scope")?.Value ?? "").Split(' ').Contains("ledger:write")));
+    o.AddPolicy("ledger:read",  p => p.RequireAssertion(ctx =>
+        (ctx.User.FindFirst("scope")?.Value ?? "").Split(' ').Contains("ledger:read")));
+    o.AddPolicy("ledger:admin", p => p.RequireAssertion(ctx =>
+        (ctx.User.FindFirst("scope")?.Value ?? "").Split(' ').Contains("ledger:admin")));
+});
 
 builder.Services.AddIntakeInfrastructure(configuration);
 
@@ -41,6 +49,14 @@ builder.Services.AddMediatR(cfg =>
 
 builder.Services.AddMassTransit(x =>
 {
+    x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("intake", false));
+
+    x.AddConsumer<FundsHeldConsumer>();
+    x.AddConsumer<TransactionMintedConsumer>();
+    x.AddConsumer<TransactionCapturedConsumer>();
+    x.AddConsumer<TransactionVoidedConsumer>();
+    x.AddConsumer<TransactionFailedConsumer>();
+
     x.AddEntityFrameworkOutbox<IntakeDbContext>(o =>
     {
         o.UsePostgres();
@@ -69,6 +85,7 @@ app.MapMintEndpoint();
 app.MapTransferEndpoint();
 app.MapCaptureEndpoint();
 app.MapVoidEndpoint();
+app.MapGetTransactionEndpoint();
 app.MapHealthChecks("/healthz");
 
 app.Run();

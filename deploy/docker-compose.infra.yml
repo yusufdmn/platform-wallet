@@ -58,14 +58,26 @@ services:
     # start-dev: no HTTPS enforcement, hostname derived from request URL (no KC_HOSTNAME needed).
     # The token issuer will be whatever URL Keycloak is accessed from, so KEYCLOAK_AUTHORITY in
     # .env must match the URL clients use to reach this container (e.g. http://<server-ip>:8088).
-    command: start-dev --import-realm
+    #
+    # Entrypoint: substitutes ${OPS_ADMIN_PASSWORD} and ${KEYCLOAK_CLIENT_SECRET} from env
+    # into the realm template before Keycloak imports it, so no credentials are hard-coded
+    # in realm-export.json.
+    entrypoint: >
+      /bin/sh -c "
+        mkdir -p /opt/keycloak/data/import &&
+        sed -e 's|\$${OPS_ADMIN_PASSWORD}|'\"$$OPS_ADMIN_PASSWORD\"'|g'
+            -e 's|\$${KEYCLOAK_CLIENT_SECRET}|'\"$$KEYCLOAK_CLIENT_SECRET\"'|g'
+            /tmp/realm-export.json.tpl > /opt/keycloak/data/import/realm-export.json &&
+        exec /opt/keycloak/bin/kc.sh start-dev --import-realm"
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      OPS_ADMIN_PASSWORD: ${OPS_ADMIN_PASSWORD}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
     ports:
       - "8088:8080"
     volumes:
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - ./keycloak/realm-export.json:/tmp/realm-export.json.tpl:ro
       - kc_data:/opt/keycloak/data
     restart: unless-stopped
 

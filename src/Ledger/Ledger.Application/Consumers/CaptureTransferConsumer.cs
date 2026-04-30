@@ -19,8 +19,12 @@ public sealed class CaptureTransferConsumer(
         var heldPool       = await repository.GetAccountAsync(SystemAccounts.HeldPoolId, ct)
             ?? throw new InvalidOperationException("@held_pool system account not found — run migrations.");
 
-        var creditAccount  = await repository.GetAccountAsync(msg.CreditAccountId, ct)
-            ?? throw new InvalidOperationException($"Credit account {msg.CreditAccountId} not found.");
+        var creditAccount = await repository.GetAccountAsync(msg.CreditAccountId, ct);
+        if (creditAccount is null)
+        {
+            creditAccount = Account.Create(msg.CreditAccountId, name: null, asset: msg.Asset);
+            repository.AddAccount(creditAccount);
+        }
 
         var debitAccount   = await repository.GetAccountAsync(msg.DebitAccountId, ct)
             ?? throw new InvalidOperationException($"Debit account {msg.DebitAccountId} not found.");

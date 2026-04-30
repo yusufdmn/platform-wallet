@@ -46,7 +46,7 @@ public sealed class TransactionSagaStateConfiguration : IEntityTypeConfiguration
 
         builder.Property(x => x.RowVersion)
             .HasColumnName("row_version")
-            .IsRowVersion();
+            .IsConcurrencyToken();
 
         builder.HasIndex(x => x.CurrentState).HasDatabaseName("IX_transaction_saga_states_current_state");
     }

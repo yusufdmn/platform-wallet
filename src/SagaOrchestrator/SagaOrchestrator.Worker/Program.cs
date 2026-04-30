@@ -44,12 +44,9 @@ var host = Host.CreateDefaultBuilder(args)
                     TimeSpan.FromMilliseconds(500),
                     TimeSpan.FromSeconds(2)));
 
-                cfg.UseScheduledRedelivery(r => r.Intervals(
-                    TimeSpan.FromMinutes(1),
-                    TimeSpan.FromMinutes(5),
-                    TimeSpan.FromMinutes(30),
-                    TimeSpan.FromHours(2),
-                    TimeSpan.FromHours(12)));
+                // UseScheduledRedelivery requires RabbitMQ delayed-message exchange plugin or
+                // a Quartz/Hangfire scheduler — not available in this deployment.
+                // UseMessageRetry above is sufficient for transient saga faults.
 
                 cfg.UsePartitioner(8, p => p.CorrelationId
                     ?? p.MessageId

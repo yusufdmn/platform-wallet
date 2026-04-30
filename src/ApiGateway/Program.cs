@@ -23,12 +23,16 @@ builder.Services
 
 builder.Services.AddAuthorization(o =>
 {
-    o.AddPolicy("LedgerWrite", p => p.RequireClaim("scope", "ledger:write"));
-    o.AddPolicy("LedgerRead",  p => p.RequireClaim("scope", "ledger:read"));
-    o.AddPolicy("LedgerAdmin", p => p.RequireClaim("scope", "ledger:admin"));
+    o.AddPolicy("LedgerWrite", p => p.RequireAssertion(ctx =>
+        (ctx.User.FindFirst("scope")?.Value ?? "").Split(' ').Contains("ledger:write")));
+    o.AddPolicy("LedgerRead",  p => p.RequireAssertion(ctx =>
+        (ctx.User.FindFirst("scope")?.Value ?? "").Split(' ').Contains("ledger:read")));
+    o.AddPolicy("LedgerAdmin", p => p.RequireAssertion(ctx =>
+        (ctx.User.FindFirst("scope")?.Value ?? "").Split(' ').Contains("ledger:admin")));
 });
 
 // Fixed-window rate limit partitioned by remote IP
+var rateLimit = int.TryParse(builder.Configuration["RATE_LIMIT_PER_MINUTE"], out var rl) ? rl : 100;
 builder.Services.AddRateLimiter(o =>
 {
     o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
@@ -36,7 +40,7 @@ builder.Services.AddRateLimiter(o =>
         var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
         {
-            PermitLimit = 100,
+            PermitLimit = rateLimit,
             Window      = TimeSpan.FromMinutes(1),
         });
     });

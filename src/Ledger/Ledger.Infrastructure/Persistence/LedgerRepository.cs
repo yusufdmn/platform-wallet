@@ -8,6 +8,9 @@ internal sealed class LedgerRepository(LedgerDbContext context) : ILedgerReposit
     public Task<Account?> GetAccountAsync(Guid id, CancellationToken ct) =>
         context.Accounts.FindAsync([id], ct).AsTask();
 
+    public void AddAccount(Account account) =>
+        context.Accounts.Add(account);
+        
     public void AddPosting(Posting posting) =>
         context.Postings.Add(posting);
 

@@ -18,6 +18,8 @@ var host = Host.CreateDefaultBuilder(args)
 
         services.AddMassTransit(x =>
         {
+            x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("webhook", false));
+
             x.AddConsumer<TransactionMintedConsumer>();
             x.AddConsumer<TransactionCapturedConsumer>();
             x.AddConsumer<TransactionVoidedConsumer>();

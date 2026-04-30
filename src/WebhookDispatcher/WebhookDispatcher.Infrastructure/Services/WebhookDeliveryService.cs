@@ -13,8 +13,10 @@ internal sealed class WebhookDeliveryService(
     IOptions<WebhookOptions> options,
     ILogger<WebhookDeliveryService> logger) : IWebhookDeliveryService
 {
-    private const string SignatureHeader = "X-Signature";
-    private const string HttpClientName  = "webhook";
+    private const string SignatureHeader     = "X-Signature";
+    private const string EventTypeHeader     = "X-Event-Type";
+    private const string CorrelationIdHeader = "X-Correlation-Id";
+    private const string HttpClientName      = "webhook";
 
     public async Task DeliverAsync(string eventType, Guid correlationId, CancellationToken ct)
     {
@@ -37,7 +39,9 @@ internal sealed class WebhookDeliveryService(
 
         request.Content.Headers.ContentType =
             new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-        request.Headers.Add(SignatureHeader, signature);
+        request.Headers.Add(SignatureHeader,     signature);
+        request.Headers.Add(EventTypeHeader,     eventType);
+        request.Headers.Add(CorrelationIdHeader, correlationId.ToString());
 
         logger.LogDebug(
             "Delivering webhook {EventType} for correlation {CorrelationId} to {TargetUrl}",
