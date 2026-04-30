@@ -58,45 +58,10 @@ MediatR, no MassTransit, no `HttpClient`, no ASP.NET Core. The only carve-out is
 `SagaOrchestrator.Domain`, which is allowed to reference `MassTransit.Abstractions`
 because the Automatonymous state machine *is* the domain in that service.
 
-### Service topology
+### High-Level System Architechture
 
-```
-                                  ┌──────────────────────────┐
-                                  │        Keycloak          │
-                                  │   (OAuth 2.1 + OIDC)     │
-                                  └──────────────────────────┘
-                                              ▲
-                                              │ JWT validation
-                                              │
-   client ──HTTP──▶  ┌─────────────────────────────────────────┐
-                     │           API Gateway (YARP)            │
-                     │  Auth · Scope policies · Rate limit     │
-                     │  Idempotency cache · Correlation ID     │
-                     └─────────────────────────────────────────┘
-                              │            │            │
-                              ▼            ▼            ▼
-            ┌──────────────────┐  ┌────────────────┐  ┌────────────────┐
-            │ Transaction      │  │ Balance Query  │  │  Ledger        │
-            │ Intake           │  │ (read model)   │  │  (admin/grpc)  │
-            └──────────────────┘  └────────────────┘  └────────────────┘
-                    │                     │                   ▲
-              outbox │                gRPC│                   │ gRPC
-                    ▼                     ▼                   │
-            ┌──────────────────────────────────────────────────────────┐
-            │                       RabbitMQ                          │
-            │   commands · events · DLQs · scheduled redelivery       │
-            └──────────────────────────────────────────────────────────┘
-                    │                     │                   │
-                    ▼                     ▼                   ▼
-            ┌──────────────────┐  ┌────────────────┐  ┌────────────────┐
-            │ Saga             │  │ Ledger         │  │ Webhook        │
-            │ Orchestrator     │  │ (consumers)    │  │ Dispatcher     │
-            │ (Automatonymous) │  │                │  │ (HMAC retry)   │
-            └──────────────────┘  └────────────────┘  └────────────────┘
-                    │                     │                   │
-                    ▼                     ▼                   ▼
-                 saga_db              ledger_db          webhook_db
-```
+<img width="1024" height="1536" alt="architecture_diagram2" src="https://github.com/user-attachments/assets/b7da726f-15e6-4f6d-83fe-7d4484d90051" />
+
 
 Every cross-service write is asynchronous and goes through RabbitMQ. The only
 synchronous cross-service call is **Balance Query → Ledger** over gRPC, used for
@@ -360,7 +325,7 @@ guardrails (e.g. `src/Ledger/CLAUDE.md` documents the append-only contract on
 
 ---
 
-## Getting started
+## Getting started (🔧 demo tools are in progress...)
 
 ### Prerequisites
 
@@ -448,7 +413,7 @@ after a test, the suite fails.
 
 ---
 
-## Demo flow
+## Demo flow (🔧 demo tools are in progress...)
 
 1. **Mint** $1000 to Alice — gateway returns `202 Accepted`, the saga walks
    `Submitted → Processing → Completed`, balance is `1000`.
