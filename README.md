@@ -1,6 +1,8 @@
 # Platform Wallet
 
-A self-hostable, open-source **Platform Wallet / Ledger-as-a-Service** built on .NET 8.
+> **Status: active development** — core transaction flows (Mint, Hold/Capture, Hold/Void) are implemented and passing end-to-end. See the [Roadmap](#roadmap) for what's in progress.
+
+A **Platform Wallet / Ledger-as-a-Service** built on .NET 8.
 It is a backend infrastructure component that platforms (gaming, e-commerce, SaaS,
 loyalty programs) can deploy into their own environment to manage internal virtual
 balances, store credit, or points with **strict double-entry accounting**, idempotency,
@@ -10,7 +12,7 @@ The domain is intentionally thin so the architecture stays in focus: Transaction
 Outbox, Saga Orchestration with compensation, CQRS, multi-layer idempotency,
 cache-stampede-safe reads, HMAC-signed webhooks, and distributed tracing.
 
-The system is **strictly single-tenant**: the host company owns the deployment,
+The system is **single-tenant**: the host company owns the deployment,
 the database, and the data inside it.
 
 ---
@@ -98,7 +100,7 @@ because the Automatonymous state machine *is* the domain in that service.
 
 Every cross-service write is asynchronous and goes through RabbitMQ. The only
 synchronous cross-service call is **Balance Query → Ledger** over gRPC, used for
-the read path with FusionCache fronting it.
+the read path with **FusionCache** fronting it.
 
 ### Headline patterns
 
@@ -106,7 +108,7 @@ the read path with FusionCache fronting it.
   same `SaveChangesAsync` in TransactionIntake; MassTransit's EF Core outbox relays
   the message to RabbitMQ. No direct `Publish`/`Send` from handlers, ever.
 - **Saga Orchestration with Compensation** — `TransactionSagaStateMachine` walks
-  through `Submitted → Held → Captured | Voided | Compensating → Failed` in a single
+  through `Submitted → Processing → Held → Completed | Failed` in a single
   readable file. State is persisted with **pessimistic concurrency** + **partitioning
   by correlation id** (different sagas run in parallel; the same saga is serialized).
 - **Two-layer idempotency** — the gateway dedupes at the network edge against
@@ -147,14 +149,14 @@ The only service that accepts `POST /v1/mint`, `/v1/transfer`, `/v1/transfer/{id
 `/v1/transfer/{id}/void`. The MediatR command handler writes the `transactions`
 row **and** the `outbox_message` row in one EF Core transaction; that atomicity
 is the whole point of this service. Nothing here talks to RabbitMQ directly.
-Five status-update consumers (`Held`, `CaptureRequested`, `Captured`, `Failed`,
+Five status-update consumers (`TransactionMinted`, `Held`, `Captured`, `Failed`,
 `Voided`) own each status transition with no multi-phase updates.
 
 ### `SagaOrchestrator` — Automatonymous state machine
 
 Worker process. Coordinates the full transaction lifecycle in a single
-`TransactionSagaStateMachine.cs` file: `Submitted → Held → Captured | Voided |
-Compensating → Failed`. Pessimistic-concurrency saga repository on Postgres,
+`TransactionSagaStateMachine.cs` file. States: `Submitted → Processing → Held →
+Completed | Failed`. Pessimistic-concurrency saga repository on Postgres,
 partitioned receive endpoint by correlation id, defense-in-depth retry on
 `DbUpdateConcurrencyException`. This is the only service where MassTransit
 types are allowed in the Domain layer.
@@ -171,8 +173,8 @@ no `UPDATE`/`DELETE` against `postings` exists anywhere in the codebase.
 
 ### `BalanceQuery` — read-only projection
 
-CQRS read side. Listens to ledger events, serves cached balances through
-gRPC-backed FusionCache. `GET /v1/accounts/{id}/balance` is implemented; a
+CQRS read side. Queries balances on-demand via gRPC from Ledger, serves them through
+FusionCache. `GET /v1/accounts/{id}/balance` is implemented; a
 `GET /v1/accounts/{id}/history` (posting history) endpoint is planned. No writes,
 no `DbContext`, no raw `IDistributedCache`. Soft timeout 100 ms, hard timeout 1 s,
 eager refresh at 80% of TTL, fail-safe enabled (serves stale on downstream error).
@@ -203,7 +205,7 @@ replay. A `transaction.burned` event type will be added alongside the Burn verb.
   GrpcNetClient, EntityFrameworkCore, StackExchangeRedis, MassTransit). Every
   service calls this; nothing else wires OTel by hand.
 
-### Operator tools (`/tools`)
+### Operator tools (`/tools`) — 🔧 Planned
 
 - **`OpsConsole`** (`http://localhost:5555`) — static HTML + minimal-API back-end.
   PKCE login against the `ops-console` Keycloak client. Read-only views: saga
@@ -224,7 +226,7 @@ replay. A `transaction.burned` event type will be added alongside the Burn verb.
 |---------------------|---------------------------------------------------------------------|
 | Runtime             | .NET 8, C# 12 (primary constructors, file-scoped namespaces)        |
 | Web edge            | YARP reverse proxy                                                  |
-| Web framework       | ASP.NET Core minimal-API + MVC                                      |
+| Web framework       | ASP.NET Core minimal-API                                            |
 | Auth                | Keycloak 25 + `Microsoft.AspNetCore.Authentication.JwtBearer`       |
 | Persistence         | PostgreSQL 16 per service (database-per-service)                    |
 | ORM (writes)        | EF Core 8 + Npgsql                                                  |
@@ -237,12 +239,10 @@ replay. A `transaction.burned` event type will be added alongside the Burn verb.
 | Validation          | FluentValidation                                                    |
 | Mediator            | MediatR (Application layer only)                                    |
 | Observability       | OpenTelemetry → OTel Collector → Jaeger (traces) + Seq (logs) + Prometheus + Grafana |
-| Logging             | Serilog → OTLP                                                      |
+| Logging             | Serilog → Seq (structured logs) + OTLP (traces/metrics)             |
 | Containerization    | Docker Compose (no Kubernetes by design — single-host self-host)    |
 | Config              | `.env` (loaded via `DotNetEnv`), `appsettings.json`, env vars       |
 | Testing             | xUnit, FluentAssertions, NSubstitute, Testcontainers (Postgres + RabbitMQ + Redis), Respawn, NetArchTest, FsCheck |
-| CI                  | GitHub Actions (`.github/workflows`)                                |
-| Central versioning  | `Directory.Packages.props` (Central Package Management on)          |
 
 ---
 
@@ -335,7 +335,7 @@ PlatformWallet/
 │   ├── WebhookDispatcher.IntegrationTests/
 │   ├── ApiGateway.IntegrationTests/ JWT scope-policy contract tests
 │   └── EndToEnd.Tests/              Driven against the live compose stack
-├── tools/
+├── tools/                           🔧 Planned — not yet published
 │   ├── DevConsole/                  Dev-time HTTP proxy + table dump (port 5200)
 │   ├── OpsConsole/                  PKCE-protected ops UI (port 5555)
 │   └── AssetAdmin/                  Asset registry tool (port 5556)
@@ -347,10 +347,9 @@ PlatformWallet/
 │   ├── otel/, prometheus/, grafana/ Observability config
 │   └── webhook-sink/                Tiny .NET app that records inbound deliveries (used by E2E tests)
 ├── docs/adr/                        Architecture Decision Records
-├── postman/                         Postman collection
+├── postman/                         Postman collection — 🔧 planned
 ├── .env.example                     Documents every required env var
 ├── CLAUDE.md                        Repo-wide engineering guardrails
-├── TheMainPlan.md                   Full architectural specification
 ├── Directory.Packages.props         Central Package Management
 └── PlatformWallet.sln
 ```
@@ -422,16 +421,16 @@ curl -X POST http://localhost:14041/v1/mint \
 
 ### 4. Open the operator UIs
 
-| Tool                | URL                              | Auth           |
-|---------------------|----------------------------------|----------------|
-| Ops Console         | http://localhost:5555            | PKCE login     |
-| Asset Admin         | http://localhost:5556            | none (LAN-only)|
-| Dev Console         | http://localhost:5200            | none (LAN-only)|
-| Jaeger              | http://`<infra-host>`:16686      | none           |
-| Seq                 | http://`<infra-host>`:5341       | none           |
-| Grafana             | http://`<infra-host>`:3000       | admin / `.env` |
-| RabbitMQ Mgmt       | http://`<infra-host>`:15672      | wallet / `.env`|
-| Keycloak Admin      | http://`<infra-host>`:8088       | admin / `.env` |
+| Tool                | URL                              | Auth            | Status         |
+|---------------------|----------------------------------|-----------------|----------------|
+| Ops Console         | http://localhost:5555            | PKCE login      | 🔧 Planned     |
+| Asset Admin         | http://localhost:5556            | none (LAN-only) | 🔧 Planned     |
+| Dev Console         | http://localhost:5200            | none (LAN-only) | 🔧 Planned     |
+| Jaeger              | http://`<infra-host>`:16686      | none            | ✅             |
+| Seq                 | http://`<infra-host>`:5341       | none            | ✅             |
+| Grafana             | http://`<infra-host>`:3000       | admin / `.env`  | ✅             |
+| RabbitMQ Mgmt       | http://`<infra-host>`:15672      | wallet / `.env` | ✅             |
+| Keycloak Admin      | http://`<infra-host>`:8088       | admin / `.env`  | ✅             |
 
 ### 5. Run the tests
 
@@ -452,10 +451,10 @@ after a test, the suite fails.
 ## Demo flow
 
 1. **Mint** $1000 to Alice — gateway returns `202 Accepted`, the saga walks
-   `Submitted → Captured`, balance is `1000`.
-2. **Transfer** $200 Alice → Bob — saga walks `Submitted → Held`. Alice's
+   `Submitted → Processing → Completed`, balance is `1000`.
+2. **Transfer** $200 Alice → Bob — saga walks `Submitted → Processing → Held`. Alice's
    available balance is `800`; the held amount is parked in `@held_pool`.
-3. **Capture** the transfer — saga walks `Held → Captured`. Bob's balance is
+3. **Capture** the transfer — saga walks `Held → Completed`. Bob's balance is
    `200`, Alice's is `800`, `@held_pool` is `0`.
 4. **Replay the capture** with the same `Idempotency-Key` — gateway returns the
    cached 2xx, no duplicate posting is created.
@@ -495,35 +494,5 @@ block PRs that violate them:
 - **No manual correlation-ID plumbing.** The only hand-written correlation-ID
   code lives in the gateway middleware. Everywhere else, OpenTelemetry
   auto-instrumentation handles W3C TraceContext propagation.
-- **Conventional Commits.** ADR numbers are cited in commit messages when the
-  change implements one (`feat(ledger): add PostingPairBuilder (ADR-0007)`).
 
 ---
-
-## Roadmap
-
-Implemented: Milestones 1 – 11 (scaffolding through end-to-end Docker Compose).
-
-In progress:
-
-- **Burn verb** — `BurnFunds`/`FundsBurned` contracts and `PostingPairBuilder`
-  support exist; `BurnFundsConsumer`, the intake endpoint, and the
-  `transaction.burned` webhook consumer are pending.
-- **Account history endpoint** — `GET /v1/accounts/{id}/history` query handler
-  scaffolded, HTTP endpoint pending.
-- **Ops Console Phase 2** — webhook replay (with the "sign once, replay verbatim"
-  guarantee) and saga force-fail / replay (gated by the zero-sum sweep).
-- **Admin scope tightening** — migrate `/admin/**` gateway routes from
-  `LedgerWrite` to `LedgerAdmin`; update the invariant endpoint policy to match.
-- **Per-asset system accounts** — wire the `asset_registry` `activated` flag
-  through `SystemAccountSeeder` and the four ledger consumers so non-USD assets
-  work end-to-end.
-
-Future: production-mode Keycloak (HTTPS + non-dev hostname), Postgres logical
-backups, and a sample SDK package.
-
----
-
-## License
-
-MIT — see `LICENSE`.
