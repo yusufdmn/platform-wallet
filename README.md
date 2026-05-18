@@ -60,7 +60,7 @@ because the Automatonymous state machine *is* the domain in that service.
 
 ### High-Level System Architecture
 
-<img width="1024" height="1536" alt="architecture_diagram2" src="https://github.com/user-attachments/assets/b7da726f-15e6-4f6d-83fe-7d4484d90051" />
+<img width="1024" height="1536" alt="architecture_diagram2" src="https://github.com/user-attachments/assets/cff3f7cd-1e1f-4930-a03f-846917c3527c" />
 
 
 Every cross-service write is asynchronous and goes through RabbitMQ. The only
