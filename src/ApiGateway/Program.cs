@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
+using PlatformWallet.ApiGateway.Yarp.ExceptionHandlers;
 using PlatformWallet.ApiGateway.Yarp.Middleware;
 using PlatformWallet.Observability;
 
@@ -30,6 +31,9 @@ builder.Services.AddAuthorization(o =>
     o.AddPolicy("LedgerAdmin", p => p.RequireAssertion(ctx =>
         (ctx.User.FindFirst("scope")?.Value ?? "").Split(' ').Contains("ledger:admin")));
 });
+
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 // Fixed-window rate limit partitioned by remote IP
 var rateLimit = int.TryParse(builder.Configuration["RATE_LIMIT_PER_MINUTE"], out var rl) ? rl : 100;
@@ -62,6 +66,8 @@ var app = builder.Build();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+app.UseExceptionHandler();
 
 // Middleware order per CLAUDE.md: Auth → ScopePolicy → RateLimit → Idempotency → CorrelationId → YARP
 app.UseAuthentication();
