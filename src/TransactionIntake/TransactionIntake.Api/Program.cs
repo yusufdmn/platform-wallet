@@ -51,7 +51,7 @@ builder.Services.AddMassTransit(x =>
 {
     x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("intake", false));
 
-    x.AddConsumer<FundsHeldConsumer>();
+    x.AddConsumer<TransactionHeldConsumer>();
     x.AddConsumer<TransactionMintedConsumer>();
     x.AddConsumer<TransactionCapturedConsumer>();
     x.AddConsumer<TransactionVoidedConsumer>();

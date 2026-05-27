@@ -6,11 +6,11 @@ using PlatformWallet.TransactionIntake.Domain;
 
 namespace PlatformWallet.TransactionIntake.Application.Consumers;
 
-public sealed class FundsHeldConsumer(
-    ITransactionRepository         repo,
-    ILogger<FundsHeldConsumer>     logger) : IConsumer<FundsHeld>
+public sealed class TransactionHeldConsumer(
+    ITransactionRepository              repo,
+    ILogger<TransactionHeldConsumer>    logger) : IConsumer<TransactionHeld>
 {
-    public async Task Consume(ConsumeContext<FundsHeld> context)
+    public async Task Consume(ConsumeContext<TransactionHeld> context)
     {
         var tx = await repo.FindByIdAsync(context.Message.CorrelationId, context.CancellationToken);
         if (tx is null) { return; }
