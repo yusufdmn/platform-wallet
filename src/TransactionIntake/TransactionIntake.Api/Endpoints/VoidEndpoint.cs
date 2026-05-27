@@ -5,7 +5,7 @@ namespace PlatformWallet.TransactionIntake.Api.Endpoints;
 
 internal static class VoidEndpoint
 {
-    private const string VoidRoute   = "/v1/transfer/{correlationId:guid}/void";
+    private const string VoidRoute   = "/transfer/{correlationId:guid}/void";
     private const string WritePolicy = "ledger:write";
 
     public static IEndpointRouteBuilder MapVoidEndpoint(this IEndpointRouteBuilder app)

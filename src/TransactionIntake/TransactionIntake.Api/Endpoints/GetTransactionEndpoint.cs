@@ -5,7 +5,7 @@ namespace PlatformWallet.TransactionIntake.Api.Endpoints;
 
 internal static class GetTransactionEndpoint
 {
-    private const string Route      = "/v1/transactions/{id:guid}";
+    private const string Route      = "/transactions/{id:guid}";
     private const string ReadPolicy = "ledger:read";
 
     public static IEndpointRouteBuilder MapGetTransactionEndpoint(this IEndpointRouteBuilder app)

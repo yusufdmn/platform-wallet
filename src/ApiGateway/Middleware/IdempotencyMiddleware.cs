@@ -30,7 +30,11 @@ public sealed class IdempotencyMiddleware(RequestDelegate next, IDistributedCach
                     ?? ctx.User.FindFirstValue("sub")
                     ?? "anonymous";
 
-        var cacheKey = $"{CacheKeyPrefix}{callerId}:{ctx.Request.Method}:{ctx.Request.Path}:{keyValues}";
+        var apiVersion = ctx.Request.Headers.TryGetValue("api-version", out var versionValues)
+            ? versionValues.ToString()
+            : "none";
+
+        var cacheKey = $"{CacheKeyPrefix}{callerId}:{ctx.Request.Method}:{apiVersion}:{ctx.Request.Path}:{keyValues}";
         var cached   = await cache.GetStringAsync(cacheKey, ctx.RequestAborted);
 
         if (cached is not null)

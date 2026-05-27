@@ -7,7 +7,7 @@ namespace PlatformWallet.TransactionIntake.Api.Endpoints;
 internal static class TransferEndpoint
 {
     private const string IdempotencyKeyHeader = "Idempotency-Key";
-    private const string TransferRoute        = "/v1/transfer";
+    private const string TransferRoute        = "/transfer";
     private const string WritePolicy          = "ledger:write";
 
     public static IEndpointRouteBuilder MapTransferEndpoint(this IEndpointRouteBuilder app)
