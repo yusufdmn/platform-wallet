@@ -1,3 +1,5 @@
+using PlatformWallet.Ledger.Domain.Exceptions;
+
 namespace PlatformWallet.Ledger.Domain;
 
 public class Account
@@ -35,8 +37,7 @@ public class Account
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
         if (!IsSystem && Balance < amount)
         {
-            throw new InvalidOperationException(
-                $"Insufficient balance on account {Id}: balance={Balance}, requested={amount}");
+            throw new InsufficientFundsException(Id, amount, Balance);
         }
 
         Balance -= amount;
@@ -47,8 +48,7 @@ public class Account
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
         if (!IsSystem && Balance < amount)
         {
-            throw new InvalidOperationException(
-                $"Insufficient balance to hold on account {Id}: balance={Balance}, requested={amount}");
+            throw new InsufficientFundsException(Id, amount, Balance);
         }
 
         Balance    -= amount;
@@ -60,8 +60,7 @@ public class Account
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
         if (HeldAmount < amount)
         {
-            throw new InvalidOperationException(
-                $"Insufficient held amount on account {Id}: held={HeldAmount}, requested={amount}");
+            throw new InsufficientHeldAmountException(Id, amount, HeldAmount);
         }
 
         HeldAmount -= amount;
@@ -73,8 +72,7 @@ public class Account
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
         if (HeldAmount < amount)
         {
-            throw new InvalidOperationException(
-                $"Insufficient held amount on account {Id}: held={HeldAmount}, requested={amount}");
+            throw new InsufficientHeldAmountException(Id, amount, HeldAmount);
         }
 
         HeldAmount -= amount;
