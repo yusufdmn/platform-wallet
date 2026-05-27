@@ -54,6 +54,7 @@ $RECYCLE.BIN/
 
 # Architectural source-of-truth kept local to the maintainer; not checked in.
 TheMainPlan.md
+GAP_AUDIT.md
 
 # NuGet
 *.nupkg
@@ -81,3 +82,6 @@ artifacts/
 # Ops console build artifacts (if any)
 src/ApiGateway.Yarp/wwwroot/console/node_modules/
 src/ApiGateway.Yarp/wwwroot/console/dist/
+
+CLAUDE.md
+.claude/

@@ -2,7 +2,7 @@ using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using PlatformWallet.Contracts.Events;
-using PlatformWallet.TransactionIntake.Application.Commands.SubmitMint;
+using PlatformWallet.TransactionIntake.Application.Common;
 using PlatformWallet.TransactionIntake.Application.Persistence;
 using PlatformWallet.TransactionIntake.Domain;
 
@@ -35,7 +35,7 @@ public sealed class SubmitTransferHandler(
         string                keyHash,
         CancellationToken     cancellationToken)
     {
-        var transactionId = Guid.NewGuid();
+        var transactionId = NewId.NextGuid();
         var transaction   = BuildTransaction(request, transactionId, keyHash);
 
         transactionRepo.Add(transaction);

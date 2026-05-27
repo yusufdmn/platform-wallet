@@ -35,7 +35,7 @@ public class SagaDbContext(DbContextOptions<SagaDbContext> options) : DbContext(
         {
             if (entry.State is EntityState.Added or EntityState.Modified)
             {
-                entry.Entity.RowVersion = Guid.NewGuid().ToByteArray();
+                entry.Entity.RowVersion = NewId.NextGuid().ToByteArray();
             }
         }
     }

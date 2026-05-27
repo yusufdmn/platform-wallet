@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace PlatformWallet.TransactionIntake.Application.Commands.SubmitMint;
+namespace PlatformWallet.TransactionIntake.Application.Common;
 
 internal static class IdempotencyHash
 {
