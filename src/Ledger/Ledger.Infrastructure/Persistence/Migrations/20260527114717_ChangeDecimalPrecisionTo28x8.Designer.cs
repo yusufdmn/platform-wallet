@@ -2,18 +2,21 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using PlatformWallet.TransactionIntake.Infrastructure.Persistence;
+using PlatformWallet.Ledger.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace PlatformWallet.TransactionIntake.Infrastructure.Persistence.Migrations
+namespace PlatformWallet.Ledger.Infrastructure.Persistence.Migrations
 {
-    [DbContext(typeof(IntakeDbContext))]
-    partial class IntakeDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(LedgerDbContext))]
+    [Migration("20260527114717_ChangeDecimalPrecisionTo28x8")]
+    partial class ChangeDecimalPrecisionTo28x8
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -192,17 +195,12 @@ namespace PlatformWallet.TransactionIntake.Infrastructure.Persistence.Migrations
                     b.ToTable("OutboxState");
                 });
 
-            modelBuilder.Entity("PlatformWallet.TransactionIntake.Domain.Transaction", b =>
+            modelBuilder.Entity("PlatformWallet.Ledger.Domain.Account", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(28, 8)
-                        .HasColumnType("numeric(28,8)")
-                        .HasColumnName("amount");
 
                     b.Property<string>("Asset")
                         .IsRequired()
@@ -210,80 +208,119 @@ namespace PlatformWallet.TransactionIntake.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(16)")
                         .HasColumnName("asset");
 
-                    b.Property<Guid>("CorrelationId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("correlation_id");
+                    b.Property<decimal>("Balance")
+                        .HasPrecision(28, 8)
+                        .HasColumnType("numeric(28,8)")
+                        .HasColumnName("balance");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<Guid>("CreditAccountId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("credit_account_id");
+                    b.Property<decimal>("HeldAmount")
+                        .HasPrecision(28, 8)
+                        .HasColumnType("numeric(28,8)")
+                        .HasColumnName("held_amount");
 
-                    b.Property<Guid?>("DebitAccountId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("debit_account_id");
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_system");
 
-                    b.Property<string>("IdempotencyKeyHash")
+                    b.Property<string>("Metadata")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("idempotency_key_hash");
+                        .HasColumnType("jsonb")
+                        .HasColumnName("metadata");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("status");
+                    b.Property<string>("Name")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
 
-                    b.Property<string>("Type")
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
                         .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasColumnName("type");
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("bytea")
+                        .HasColumnName("row_version")
+                        .HasDefaultValueSql("'\\x00000000'::bytea");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CorrelationId")
-                        .HasDatabaseName("ix_transactions_correlation_id");
+                    b.ToTable("accounts", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_accounts_balance_floor", "is_system = true OR balance >= 0");
 
-                    b.HasIndex("IdempotencyKeyHash")
-                        .IsUnique()
-                        .HasDatabaseName("uq_transactions_idempotency_key_hash");
-
-                    b.ToTable("transactions", (string)null);
+                            t.HasCheckConstraint("ck_accounts_held_amount_floor", "held_amount >= 0");
+                        });
                 });
 
-            modelBuilder.Entity("PlatformWallet.TransactionIntake.Infrastructure.Persistence.Outbox.IdempotencyKey", b =>
+            modelBuilder.Entity("PlatformWallet.Ledger.Domain.Posting", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
+                        .HasColumnType("bigint")
                         .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<decimal>("AmountSigned")
+                        .HasPrecision(28, 8)
+                        .HasColumnType("numeric(28,8)")
+                        .HasColumnName("amount_signed");
+
+                    b.Property<string>("Asset")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("asset");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("KeyHash")
+                    b.Property<string>("EntryKind")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("key_hash");
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("entry_kind");
 
-                    b.Property<Guid>("TransactionId")
+                    b.Property<string>("Phase")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("phase");
+
+                    b.Property<Guid>("TxId")
                         .HasColumnType("uuid")
-                        .HasColumnName("transaction_id");
+                        .HasColumnName("tx_id");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("KeyHash")
-                        .IsUnique()
-                        .HasDatabaseName("uq_idempotency_keys_key_hash");
+                    b.HasIndex("TxId")
+                        .HasDatabaseName("ix_postings_tx");
 
-                    b.ToTable("idempotency_keys", (string)null);
+                    b.HasIndex("AccountId", "CreatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_postings_account_created");
+
+                    b.HasIndex("TxId", "AccountId", "Phase")
+                        .IsUnique()
+                        .HasDatabaseName("uq_posting_tx_account_phase");
+
+                    b.ToTable("postings", (string)null);
+                });
+
+            modelBuilder.Entity("PlatformWallet.Ledger.Domain.Posting", b =>
+                {
+                    b.HasOne("PlatformWallet.Ledger.Domain.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

@@ -18,7 +18,7 @@ internal sealed class PostingConfiguration : IEntityTypeConfiguration<Posting>
         builder.Property(p => p.TxId).HasColumnName("tx_id");
         builder.Property(p => p.AccountId).HasColumnName("account_id");
         builder.Property(p => p.Asset).HasColumnName("asset").HasMaxLength(16).IsRequired();
-        builder.Property(p => p.AmountSigned).HasColumnName("amount_signed").HasPrecision(18, 2);
+        builder.Property(p => p.AmountSigned).HasColumnName("amount_signed").HasPrecision(28, 8);
         builder.Property(p => p.EntryKind).HasColumnName("entry_kind").HasConversion<string>().HasMaxLength(16);
         builder.Property(p => p.Phase).HasColumnName("phase").HasConversion<string>().HasMaxLength(16);
         builder.Property(p => p.CreatedAt).HasColumnName("created_at");

@@ -25,7 +25,7 @@ internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transa
         builder.Property(t => t.Status).HasColumnName("status")
             .HasMaxLength(StatusMaxLength)
             .HasConversion<string>();
-        builder.Property(t => t.Amount).HasColumnName("amount").HasPrecision(18, 2);
+        builder.Property(t => t.Amount).HasColumnName("amount").HasPrecision(28, 8);
         builder.Property(t => t.Asset).HasColumnName("asset").HasMaxLength(AssetMaxLength).IsRequired();
         builder.Property(t => t.DebitAccountId).HasColumnName("debit_account_id");
         builder.Property(t => t.CreditAccountId).HasColumnName("credit_account_id");
