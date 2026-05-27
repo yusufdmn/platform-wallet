@@ -1,6 +1,8 @@
 using DotNetEnv;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using PlatformWallet.BalanceQuery.Api.Endpoints;
+using PlatformWallet.BalanceQuery.Application.Consumers;
 using PlatformWallet.BalanceQuery.Infrastructure;
 using PlatformWallet.Observability;
 
@@ -29,6 +31,32 @@ builder.Services.AddAuthorization(o =>
 });
 
 builder.Services.AddBalanceQueryInfrastructure(builder.Configuration);
+
+builder.Services.AddMassTransit(x =>
+{
+    x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("balance-query", false));
+
+    x.AddConsumer<TransactionHeldConsumer>();
+    x.AddConsumer<TransactionCapturedConsumer>();
+    x.AddConsumer<TransactionVoidedConsumer>();
+    x.AddConsumer<TransactionMintedConsumer>();
+    x.AddConsumer<TransactionBurnedConsumer>();
+
+    x.AddConfigureEndpointsCallback((context, _, cfg) =>
+    {
+        cfg.UseInMemoryOutbox(context);
+    });
+
+    x.UsingRabbitMq((ctx, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RABBITMQ_HOST"], h =>
+        {
+            h.Username(builder.Configuration["RABBITMQ_DEFAULT_USER"]!);
+            h.Password(builder.Configuration["RABBITMQ_DEFAULT_PASSWORD"]!);
+        });
+        cfg.ConfigureEndpoints(ctx);
+    });
+});
 
 builder.Services.AddHealthChecks();
 

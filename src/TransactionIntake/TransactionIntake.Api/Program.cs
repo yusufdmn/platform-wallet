@@ -63,6 +63,11 @@ builder.Services.AddMassTransit(x =>
         o.UseBusOutbox();
     });
 
+    x.AddConfigureEndpointsCallback((context, _, cfg) =>
+    {
+        cfg.UseEntityFrameworkOutbox<IntakeDbContext>(context);
+    });
+
     x.UsingRabbitMq((ctx, cfg) =>
     {
         cfg.Host(configuration["RABBITMQ_HOST"], h =>
