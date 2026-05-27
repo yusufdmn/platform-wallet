@@ -35,7 +35,7 @@ public sealed class SubmitTransferHandler(
         string                keyHash,
         CancellationToken     cancellationToken)
     {
-        var transactionId = Guid.NewGuid();
+        var transactionId = NewId.NextGuid();
         var transaction   = BuildTransaction(request, transactionId, keyHash);
 
         transactionRepo.Add(transaction);

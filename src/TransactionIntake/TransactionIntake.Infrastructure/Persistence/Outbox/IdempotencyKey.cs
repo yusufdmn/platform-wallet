@@ -1,3 +1,5 @@
+using MassTransit;
+
 namespace PlatformWallet.TransactionIntake.Infrastructure.Persistence.Outbox;
 
 public class IdempotencyKey
@@ -12,7 +14,7 @@ public class IdempotencyKey
     public static IdempotencyKey Create(string keyHash, Guid transactionId) =>
         new()
         {
-            Id            = Guid.NewGuid(),
+            Id            = NewId.NextGuid(),
             KeyHash       = keyHash,
             TransactionId = transactionId,
             CreatedAt     = DateTimeOffset.UtcNow,
