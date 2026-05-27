@@ -11,7 +11,7 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <DeterministicSourcePaths>true</DeterministicSourcePaths>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <NoWarn>$(NoWarn);CS1591;CA1848</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;CA1848;NU1902;NU1901</NoWarn>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <Company>Platform Wallet</Company>
     <Product>Platform Wallet</Product>

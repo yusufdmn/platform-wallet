@@ -31,6 +31,11 @@ var host = Host.CreateDefaultBuilder(args)
                 o.UseBusOutbox();
             });
 
+            x.AddConfigureEndpointsCallback((context, _, cfg) =>
+            {
+                cfg.UseEntityFrameworkOutbox<SagaDbContext>(context);
+            });
+
             x.UsingRabbitMq((_, cfg) =>
             {
                 cfg.Host(configuration["RABBITMQ_HOST"], h =>
