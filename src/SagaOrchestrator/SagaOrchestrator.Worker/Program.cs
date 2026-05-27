@@ -44,10 +44,17 @@ var host = Host.CreateDefaultBuilder(args)
                     h.Password(configuration["RABBITMQ_DEFAULT_PASSWORD"]!);
                 });
 
-                cfg.UseMessageRetry(r => r.Intervals(
-                    TimeSpan.FromMilliseconds(100),
-                    TimeSpan.FromMilliseconds(500),
-                    TimeSpan.FromSeconds(2)));
+                cfg.UseMessageRetry(r =>
+                {
+                    r.Intervals(
+                        TimeSpan.FromMilliseconds(100),
+                        TimeSpan.FromMilliseconds(500),
+                        TimeSpan.FromSeconds(2));
+                    r.Ignore<ArgumentException>();
+                    r.Ignore<ArgumentNullException>();
+                    r.Ignore<NullReferenceException>();
+                    r.Ignore<InvalidCastException>();
+                });
 
                 // UseScheduledRedelivery requires RabbitMQ delayed-message exchange plugin or
                 // a Quartz/Hangfire scheduler — not available in this deployment.

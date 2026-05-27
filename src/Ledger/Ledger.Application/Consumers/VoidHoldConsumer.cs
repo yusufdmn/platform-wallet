@@ -4,6 +4,7 @@ using PlatformWallet.Contracts.Commands;
 using PlatformWallet.Contracts.Events;
 using PlatformWallet.Ledger.Application.Persistence;
 using PlatformWallet.Ledger.Domain;
+using PlatformWallet.Ledger.Domain.Exceptions;
 
 namespace PlatformWallet.Ledger.Application.Consumers;
 
@@ -16,39 +17,48 @@ public sealed class VoidHoldConsumer(
         var msg = context.Message;
         var ct  = context.CancellationToken;
 
-        var heldPool     = await repository.GetAccountAsync(SystemAccounts.HeldPoolId, ct)
-            ?? throw new InvalidOperationException("@held_pool system account not found — run migrations.");
+        try
+        {
+            var heldPool     = await repository.GetAccountAsync(SystemAccounts.HeldPoolId, ct)
+                ?? throw new SystemAccountNotFoundException("@held_pool");
 
-        var debitAccount = await repository.GetAccountAsync(msg.DebitAccountId, ct)
-            ?? throw new InvalidOperationException($"Account {msg.DebitAccountId} not found.");
+            var debitAccount = await repository.GetAccountAsync(msg.DebitAccountId, ct)
+                ?? throw new AccountNotFoundException(msg.DebitAccountId);
 
-        ValidateAsset(heldPool,     msg.Asset);
-        ValidateAsset(debitAccount, msg.Asset);
+            ValidateAsset(heldPool,     msg.Asset);
+            ValidateAsset(debitAccount, msg.Asset);
 
-        var (debit, credit) = PostingPairBuilder.BuildVoid(
-            msg.CorrelationId, msg.DebitAccountId, msg.Amount, msg.Asset);
+            var (debit, credit) = PostingPairBuilder.BuildVoid(
+                msg.CorrelationId, msg.DebitAccountId, msg.Amount, msg.Asset);
 
-        debitAccount.ReleaseHold(msg.Amount);
-        heldPool.ApplyDebit(msg.Amount);
+            debitAccount.ReleaseHold(msg.Amount);
+            heldPool.ApplyDebit(msg.Amount);
 
-        repository.AddPosting(debit);
-        repository.AddPosting(credit);
+            repository.AddPosting(debit);
+            repository.AddPosting(credit);
 
-        await repository.SaveChangesAsync(ct);
+            await repository.SaveChangesAsync(ct);
 
-        await context.Publish(new HoldVoided(msg.CorrelationId), ct);
+            await context.Publish(new HoldVoided(msg.CorrelationId), ct);
 
-        logger.LogInformation(
-            "Voided hold of {Amount} {Asset} on account {AccountId} for tx {CorrelationId}",
-            msg.Amount, msg.Asset, msg.DebitAccountId, msg.CorrelationId);
+            logger.LogInformation(
+                "Voided hold of {Amount} {Asset} on account {AccountId} for tx {CorrelationId}",
+                msg.Amount, msg.Asset, msg.DebitAccountId, msg.CorrelationId);
+        }
+        catch (LedgerDomainException ex)
+        {
+            await context.Publish(new VoidFailed(msg.CorrelationId, ex.Message), ct);
+
+            logger.LogWarning(
+                "Void failed for tx {CorrelationId}: {Reason}", msg.CorrelationId, ex.Message);
+        }
     }
 
     private static void ValidateAsset(Account account, string expectedAsset)
     {
         if (!string.Equals(account.Asset, expectedAsset, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException(
-                $"Asset mismatch on account {account.Id}: account asset='{account.Asset}', message asset='{expectedAsset}'.");
+            throw new AssetMismatchException(account.Id, account.Asset, expectedAsset);
         }
     }
 }

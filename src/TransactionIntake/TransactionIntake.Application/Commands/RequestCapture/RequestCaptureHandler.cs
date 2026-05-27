@@ -2,6 +2,7 @@ using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using PlatformWallet.Contracts.Events;
+using PlatformWallet.TransactionIntake.Application.Exceptions;
 using PlatformWallet.TransactionIntake.Application.Persistence;
 using PlatformWallet.TransactionIntake.Domain;
 
@@ -16,7 +17,7 @@ public sealed class RequestCaptureHandler(
     public async Task Handle(RequestCaptureCommand request, CancellationToken cancellationToken)
     {
         var tx = await transactionRepo.FindByIdAsync(request.CorrelationId, cancellationToken)
-            ?? throw new InvalidOperationException($"Transaction {request.CorrelationId} not found");
+            ?? throw new TransactionNotFoundException(request.CorrelationId);
 
         tx.Transition(TransactionStatus.CaptureRequested);
 

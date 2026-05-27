@@ -4,9 +4,11 @@ using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using PlatformWallet.Observability;
 using PlatformWallet.TransactionIntake.Api.Endpoints;
+using PlatformWallet.TransactionIntake.Api.ExceptionHandlers;
 using PlatformWallet.TransactionIntake.Application.Behaviours;
 using PlatformWallet.TransactionIntake.Application.Commands.SubmitMint;
 using PlatformWallet.TransactionIntake.Application.Consumers;
+using PlatformWallet.TransactionIntake.Domain.Exceptions;
 using PlatformWallet.TransactionIntake.Infrastructure;
 using PlatformWallet.TransactionIntake.Infrastructure.Persistence;
 
@@ -36,6 +38,9 @@ builder.Services.AddAuthorization(o =>
     o.AddPolicy("ledger:admin", p => p.RequireAssertion(ctx =>
         (ctx.User.FindFirst("scope")?.Value ?? "").Split(' ').Contains("ledger:admin")));
 });
+
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 builder.Services.AddIntakeInfrastructure(configuration);
 
@@ -75,6 +80,17 @@ builder.Services.AddMassTransit(x =>
             h.Username(configuration["RABBITMQ_DEFAULT_USER"]!);
             h.Password(configuration["RABBITMQ_DEFAULT_PASSWORD"]!);
         });
+
+        cfg.UseMessageRetry(r =>
+        {
+            r.Interval(3, TimeSpan.FromSeconds(5));
+            r.Ignore<IntakeDomainException>();
+            r.Ignore<ArgumentException>();
+            r.Ignore<ArgumentNullException>();
+            r.Ignore<NullReferenceException>();
+            r.Ignore<InvalidCastException>();
+        });
+
         cfg.ConfigureEndpoints(ctx);
     });
 });
@@ -83,6 +99,7 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
 
