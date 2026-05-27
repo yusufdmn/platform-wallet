@@ -86,9 +86,10 @@ public class JwtScopePolicyTests
         // Token has only ledger:read — not ledger:write
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", BuildJwt("ledger:read"));
+        client.DefaultRequestHeaders.Add("api-version", "1");
 
         using var content = new StringContent("{}", Encoding.UTF8, "application/json");
-        var response = await client.PostAsync("/v1/transactions/mint", content);
+        var response = await client.PostAsync("/mint", content);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
             "LedgerWrite policy requires ledger:write scope — ledger:read alone must be rejected");
@@ -128,7 +129,7 @@ public class JwtScopePolicyTests
 
         var idempotencyKey = Guid.NewGuid().ToString();
         const string callerId = "test-user";
-        var cacheKey = $"gw:idempotency:{callerId}:POST:/v1/transactions/mint:{idempotencyKey}";
+        var cacheKey = $"gw:idempotency:{callerId}:POST:1:/mint:{idempotencyKey}";
 
         // Pre-seed the in-memory distributed cache with a fake 202 response
         var cachedEntry = JsonSerializer.Serialize(new
@@ -151,8 +152,9 @@ public class JwtScopePolicyTests
 
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", BuildJwt("ledger:write"));
+        client.DefaultRequestHeaders.Add("api-version", "1");
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "/v1/transactions/mint")
+        var request = new HttpRequestMessage(HttpMethod.Post, "/mint")
         {
             Content = new StringContent("{}", Encoding.UTF8, "application/json"),
         };

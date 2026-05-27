@@ -7,7 +7,7 @@ namespace PlatformWallet.TransactionIntake.Api.Endpoints;
 internal static class MintEndpoint
 {
     private const string IdempotencyKeyHeader = "Idempotency-Key";
-    private const string MintRoute            = "/v1/mint";
+    private const string MintRoute            = "/mint";
     private const string WritePolicy          = "ledger:write";
 
     public static IEndpointRouteBuilder MapMintEndpoint(this IEndpointRouteBuilder app)

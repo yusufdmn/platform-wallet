@@ -66,6 +66,7 @@ public sealed class FullSystemFlowTests : IAsyncLifetime, IDisposable
         _webhookSink.BaseAddress = new Uri(WebhookSinkUrl);
         _gateway.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
+        _gateway.DefaultRequestHeaders.Add("api-version", "1");
 
         await _webhookSink.DeleteAsync("/deliveries");
     }
@@ -131,7 +132,7 @@ public sealed class FullSystemFlowTests : IAsyncLifetime, IDisposable
             s => s == "Held",
             TimeSpan.FromSeconds(30));
 
-        var capResp = await PostNoBodyAsync($"/v1/transfer/{holdTxId}/capture");
+        var capResp = await PostNoBodyAsync($"/transfer/{holdTxId}/capture");
         capResp.StatusCode.Should().BeOneOf(HttpStatusCode.Accepted, HttpStatusCode.OK);
 
         var status = await PollUntilAsync(
@@ -167,7 +168,7 @@ public sealed class FullSystemFlowTests : IAsyncLifetime, IDisposable
             s => s == "Held",
             TimeSpan.FromSeconds(30));
 
-        var voidResp = await PostNoBodyAsync($"/v1/transfer/{holdTxId}/void");
+        var voidResp = await PostNoBodyAsync($"/transfer/{holdTxId}/void");
         voidResp.StatusCode.Should().BeOneOf(HttpStatusCode.Accepted, HttpStatusCode.OK);
 
         var status = await PollUntilAsync(
@@ -231,7 +232,7 @@ public sealed class FullSystemFlowTests : IAsyncLifetime, IDisposable
 
     private async Task<Guid> PostMintAsync(Guid creditAccountId, decimal amount)
     {
-        var resp = await PostJsonAsync("/v1/mint", new
+        var resp = await PostJsonAsync("/mint", new
         {
             creditAccountId,
             amount,
@@ -244,7 +245,7 @@ public sealed class FullSystemFlowTests : IAsyncLifetime, IDisposable
 
     private async Task<Guid> PostTransferAsync(Guid debitAccountId, Guid creditAccountId, decimal amount)
     {
-        var resp = await PostJsonAsync("/v1/transfer", new
+        var resp = await PostJsonAsync("/transfer", new
         {
             debitAccountId,
             creditAccountId,
@@ -302,7 +303,7 @@ public sealed class FullSystemFlowTests : IAsyncLifetime, IDisposable
 
     private async Task<decimal> GetBalanceAsync(Guid accountId)
     {
-        var resp = await _gateway.GetAsync($"/v1/accounts/{accountId}/balance");
+        var resp = await _gateway.GetAsync($"/accounts/{accountId}/balance");
         if (!resp.IsSuccessStatusCode)
         {
             return 0m;
@@ -314,7 +315,7 @@ public sealed class FullSystemFlowTests : IAsyncLifetime, IDisposable
 
     private async Task<string> GetTransactionStatusAsync(Guid txId)
     {
-        var resp = await _gateway.GetAsync($"/v1/transactions/{txId}");
+        var resp = await _gateway.GetAsync($"/transactions/{txId}");
         if (!resp.IsSuccessStatusCode)
         {
             return "";

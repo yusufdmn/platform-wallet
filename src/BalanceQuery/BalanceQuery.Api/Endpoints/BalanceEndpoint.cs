@@ -4,7 +4,7 @@ namespace PlatformWallet.BalanceQuery.Api.Endpoints;
 
 internal static class BalanceEndpoint
 {
-    private const string BalanceRoute = "/v1/accounts/{accountId:guid}/balance";
+    private const string BalanceRoute = "/accounts/{accountId:guid}/balance";
     private const string ReadPolicy   = "ledger:read";
 
     public static IEndpointRouteBuilder MapBalanceEndpoint(this IEndpointRouteBuilder app)

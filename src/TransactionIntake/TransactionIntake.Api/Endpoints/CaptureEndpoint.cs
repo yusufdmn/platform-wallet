@@ -5,7 +5,7 @@ namespace PlatformWallet.TransactionIntake.Api.Endpoints;
 
 internal static class CaptureEndpoint
 {
-    private const string CaptureRoute = "/v1/transfer/{correlationId:guid}/capture";
+    private const string CaptureRoute = "/transfer/{correlationId:guid}/capture";
     private const string WritePolicy  = "ledger:write";
 
     public static IEndpointRouteBuilder MapCaptureEndpoint(this IEndpointRouteBuilder app)
