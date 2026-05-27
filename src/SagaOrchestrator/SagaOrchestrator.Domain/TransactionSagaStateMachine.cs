@@ -18,17 +18,23 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
     public State Failed     { get; private set; } = null!;
 
     // ── Events ────────────────────────────────────────────────────────────────
-    public Event<TransactionSubmitted>      TransactionSubmitted    { get; private set; } = null!;
-    public Event<FundsMinted>               FundsMinted             { get; private set; } = null!;
-    public Event<FundsHeld>                 FundsHeld               { get; private set; } = null!;
-    public Event<CaptureTransferRequested>  CaptureRequested        { get; private set; } = null!;
-    public Event<VoidRequested>             VoidRequested           { get; private set; } = null!;
-    public Event<TransferCaptured>          TransferCaptured        { get; private set; } = null!;
-    public Event<HoldVoided>                HoldVoided              { get; private set; } = null!;
-    public Event<Fault<MintFunds>>          MintFundsFaulted        { get; private set; } = null!;
-    public Event<Fault<HoldFunds>>          HoldFundsFaulted        { get; private set; } = null!;
-    public Event<Fault<CaptureTransfer>>    CaptureTransferFaulted  { get; private set; } = null!;
-    public Event<Fault<VoidHold>>           VoidHoldFaulted         { get; private set; } = null!;
+    public Event<TransactionSubmitted>      TransactionSubmitted     { get; private set; } = null!;
+    public Event<FundsMinted>               FundsMinted              { get; private set; } = null!;
+    public Event<FundsHeld>                 FundsHeld                { get; private set; } = null!;
+    public Event<CaptureTransferRequested>  CaptureTransferRequested { get; private set; } = null!;
+    public Event<VoidRequested>             VoidRequested            { get; private set; } = null!;
+    public Event<TransferCaptured>          TransferCaptured         { get; private set; } = null!;
+    public Event<HoldVoided>                HoldVoided               { get; private set; } = null!;
+    // Domain failure events — business-rule violations (no retry, no DLQ)
+    public Event<MintFailed>                MintFailed               { get; private set; } = null!;
+    public Event<HoldFailed>                HoldFailed               { get; private set; } = null!;
+    public Event<CaptureFailed>             CaptureFailed            { get; private set; } = null!;
+    public Event<VoidFailed>                VoidFailed               { get; private set; } = null!;
+    // System fault events — infrastructure failures (retry → DLQ → failed_messages)
+    public Event<Fault<MintFunds>>          MintFundsFaulted         { get; private set; } = null!;
+    public Event<Fault<HoldFunds>>          HoldFundsFaulted         { get; private set; } = null!;
+    public Event<Fault<CaptureTransfer>>    CaptureTransferFaulted   { get; private set; } = null!;
+    public Event<Fault<VoidHold>>           VoidHoldFaulted          { get; private set; } = null!;
 
     public TransactionSagaStateMachine(ILogger<TransactionSagaStateMachine> logger)
     {
@@ -49,7 +55,7 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
         Event(() => FundsHeld,
             e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
 
-        Event(() => CaptureRequested,
+        Event(() => CaptureTransferRequested,
             e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
 
         Event(() => VoidRequested,
@@ -59,6 +65,18 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
             e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
 
         Event(() => HoldVoided,
+            e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
+
+        Event(() => MintFailed,
+            e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
+
+        Event(() => HoldFailed,
+            e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
+
+        Event(() => CaptureFailed,
+            e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
+
+        Event(() => VoidFailed,
             e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
 
         Event(() => MintFundsFaulted,
@@ -116,13 +134,22 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                 .Then(ctx => logger.LogInformation(
                     "Saga {CorrelationId}: mint completed", ctx.Saga.CorrelationId)),
 
-            // Mint fault
+            // Mint domain failure — business rule violated (no retry)
+            When(MintFailed)
+                .Then(ctx => Fail(ctx.Saga, ctx.Message.Reason))
+                .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
+                .TransitionTo(Failed)
+                .Then(ctx => logger.LogWarning(
+                    "Saga {CorrelationId}: mint domain failure — {Reason}",
+                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
+
+            // Mint system fault — infrastructure failure (retried → DLQ → failed_messages)
             When(MintFundsFaulted)
                 .Then(ctx => Fail(ctx.Saga, FirstException(ctx.Message)))
                 .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
                 .TransitionTo(Failed)
                 .Then(ctx => logger.LogError(
-                    "Saga {CorrelationId}: mint failed — {Reason}",
+                    "Saga {CorrelationId}: mint system fault — {Reason}",
                     ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
 
             // Hold success → publish TransactionHeld, wait for capture or void request
@@ -136,18 +163,27 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                 .Then(ctx => logger.LogInformation(
                     "Saga {CorrelationId}: funds held", ctx.Saga.CorrelationId)),
 
-            // Hold fault → fail immediately
+            // Hold domain failure — business rule violated (no retry)
+            When(HoldFailed)
+                .Then(ctx => Fail(ctx.Saga, ctx.Message.Reason))
+                .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
+                .TransitionTo(Failed)
+                .Then(ctx => logger.LogWarning(
+                    "Saga {CorrelationId}: hold domain failure — {Reason}",
+                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
+
+            // Hold system fault — infrastructure failure
             When(HoldFundsFaulted)
                 .Then(ctx => Fail(ctx.Saga, FirstException(ctx.Message)))
                 .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
                 .TransitionTo(Failed)
                 .Then(ctx => logger.LogError(
-                    "Saga {CorrelationId}: hold failed — {Reason}",
+                    "Saga {CorrelationId}: hold system fault — {Reason}",
                     ctx.Saga.CorrelationId, ctx.Saga.FailureReason)));
 
         During(Held,
             // Capture requested
-            When(CaptureRequested)
+            When(CaptureTransferRequested)
                 .Then(ctx => Touch(ctx.Saga))
                 .Publish(ctx => new CaptureTransfer(
                     ctx.Saga.CorrelationId,
@@ -179,7 +215,23 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                 .Then(ctx => logger.LogInformation(
                     "Saga {CorrelationId}: transfer captured", ctx.Saga.CorrelationId)),
 
-            // Capture fault → void to compensate
+            // Capture domain failure → void to compensate
+            When(CaptureFailed)
+                .Then(ctx =>
+                {
+                    Fail(ctx.Saga, ctx.Message.Reason);
+                    ctx.Saga.IsCompensating = true;
+                })
+                .Publish(ctx => new VoidHold(
+                    ctx.Saga.CorrelationId,
+                    ctx.Saga.DebitAccountId!.Value,
+                    ctx.Saga.Amount,
+                    ctx.Saga.Asset))
+                .Then(ctx => logger.LogWarning(
+                    "Saga {CorrelationId}: capture domain failure, voiding hold — {Reason}",
+                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
+
+            // Capture system fault → void to compensate
             When(CaptureTransferFaulted)
                 .Then(ctx =>
                 {
@@ -192,16 +244,25 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                     ctx.Saga.Amount,
                     ctx.Saga.Asset))
                 .Then(ctx => logger.LogError(
-                    "Saga {CorrelationId}: capture failed, voiding hold — {Reason}",
+                    "Saga {CorrelationId}: capture system fault, voiding hold — {Reason}",
                     ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
 
-            // VoidHold fault → compensate failed, mark as failed
+            // VoidHold domain failure → failed
+            When(VoidFailed)
+                .Then(ctx => Fail(ctx.Saga, ctx.Message.Reason))
+                .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
+                .TransitionTo(Failed)
+                .Then(ctx => logger.LogWarning(
+                    "Saga {CorrelationId}: void hold domain failure — {Reason}",
+                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
+
+            // VoidHold system fault → compensate failed, mark as failed
             When(VoidHoldFaulted)
                 .Then(ctx => Fail(ctx.Saga, FirstException(ctx.Message)))
                 .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
                 .TransitionTo(Failed)
                 .Then(ctx => logger.LogError(
-                    "Saga {CorrelationId}: void hold failed — {Reason}",
+                    "Saga {CorrelationId}: void hold system fault — {Reason}",
                     ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
 
             // Void success — if compensating then fail, else complete
