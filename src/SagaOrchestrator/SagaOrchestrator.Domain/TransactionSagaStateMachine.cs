@@ -108,7 +108,10 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
             // Mint success
             When(FundsMinted)
                 .Then(ctx => Touch(ctx.Saga))
-                .Publish(ctx => new TransactionMinted(ctx.Saga.CorrelationId))
+                .Publish(ctx => new TransactionMinted(
+                    ctx.Saga.CorrelationId,
+                    ctx.Saga.DebitAccountId,
+                    ctx.Saga.CreditAccountId))
                 .TransitionTo(Completed)
                 .Then(ctx => logger.LogInformation(
                     "Saga {CorrelationId}: mint completed", ctx.Saga.CorrelationId)),
@@ -122,9 +125,13 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                     "Saga {CorrelationId}: mint failed — {Reason}",
                     ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
 
-            // Hold success → wait for capture or void request
+            // Hold success → publish TransactionHeld, wait for capture or void request
             When(FundsHeld)
                 .Then(ctx => Touch(ctx.Saga))
+                .Publish(ctx => new TransactionHeld(
+                    ctx.Saga.CorrelationId,
+                    ctx.Saga.DebitAccountId!.Value,
+                    ctx.Saga.CreditAccountId))
                 .TransitionTo(Held)
                 .Then(ctx => logger.LogInformation(
                     "Saga {CorrelationId}: funds held", ctx.Saga.CorrelationId)),
@@ -164,7 +171,10 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
             // Capture success
             When(TransferCaptured)
                 .Then(ctx => Touch(ctx.Saga))
-                .Publish(ctx => new TransactionCaptured(ctx.Saga.CorrelationId))
+                .Publish(ctx => new TransactionCaptured(
+                    ctx.Saga.CorrelationId,
+                    ctx.Saga.DebitAccountId!.Value,
+                    ctx.Saga.CreditAccountId))
                 .TransitionTo(Completed)
                 .Then(ctx => logger.LogInformation(
                     "Saga {CorrelationId}: transfer captured", ctx.Saga.CorrelationId)),
@@ -205,7 +215,10 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                             "Saga {CorrelationId}: capture compensated via void — failed",
                             ctx.Saga.CorrelationId)),
                     binder => binder
-                        .Publish(ctx => new TransactionVoided(ctx.Saga.CorrelationId))
+                        .Publish(ctx => new TransactionVoided(
+                            ctx.Saga.CorrelationId,
+                            ctx.Saga.DebitAccountId!.Value,
+                            ctx.Saga.CreditAccountId))
                         .TransitionTo(Completed)
                         .Then(ctx => logger.LogInformation(
                             "Saga {CorrelationId}: hold voided by user request",
