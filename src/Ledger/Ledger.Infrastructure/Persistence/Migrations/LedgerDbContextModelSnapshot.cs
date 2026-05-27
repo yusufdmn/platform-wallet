@@ -206,8 +206,8 @@ namespace PlatformWallet.Ledger.Infrastructure.Persistence.Migrations
                         .HasColumnName("asset");
 
                     b.Property<decimal>("Balance")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
+                        .HasPrecision(28, 8)
+                        .HasColumnType("numeric(28,8)")
                         .HasColumnName("balance");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -215,8 +215,8 @@ namespace PlatformWallet.Ledger.Infrastructure.Persistence.Migrations
                         .HasColumnName("created_at");
 
                     b.Property<decimal>("HeldAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
+                        .HasPrecision(28, 8)
+                        .HasColumnType("numeric(28,8)")
                         .HasColumnName("held_amount");
 
                     b.Property<bool>("IsSystem")
@@ -265,8 +265,8 @@ namespace PlatformWallet.Ledger.Infrastructure.Persistence.Migrations
                         .HasColumnName("account_id");
 
                     b.Property<decimal>("AmountSigned")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
+                        .HasPrecision(28, 8)
+                        .HasColumnType("numeric(28,8)")
                         .HasColumnName("amount_signed");
 
                     b.Property<string>("Asset")

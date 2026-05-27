@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PlatformWallet.TransactionIntake.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using PlatformWallet.TransactionIntake.Infrastructure.Persistence;
 namespace PlatformWallet.TransactionIntake.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(IntakeDbContext))]
-    partial class IntakeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260527114806_ChangeDecimalPrecisionTo28x8")]
+    partial class ChangeDecimalPrecisionTo28x8
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

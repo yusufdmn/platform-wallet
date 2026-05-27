@@ -15,8 +15,8 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 
         builder.Property(a => a.Name).HasColumnName("name").HasMaxLength(200);
         builder.Property(a => a.Asset).HasColumnName("asset").HasMaxLength(16).IsRequired();
-        builder.Property(a => a.Balance).HasColumnName("balance").HasPrecision(18, 2);
-        builder.Property(a => a.HeldAmount).HasColumnName("held_amount").HasPrecision(18, 2);
+        builder.Property(a => a.Balance).HasColumnName("balance").HasPrecision(28, 8);
+        builder.Property(a => a.HeldAmount).HasColumnName("held_amount").HasPrecision(28, 8);
         builder.Property(a => a.IsSystem).HasColumnName("is_system");
         builder.Property(a => a.CreatedAt).HasColumnName("created_at");
 

@@ -30,7 +30,7 @@ public sealed class TransactionSagaStateConfiguration : IEntityTypeConfiguration
 
         builder.Property(x => x.DebitAccountId).HasColumnName("debit_account_id");
         builder.Property(x => x.CreditAccountId).HasColumnName("credit_account_id");
-        builder.Property(x => x.Amount).HasColumnName("amount").HasColumnType("numeric(28,8)");
+        builder.Property(x => x.Amount).HasColumnName("amount").HasPrecision(28, 8);
 
         builder.Property(x => x.Asset)
             .HasColumnName("asset")
