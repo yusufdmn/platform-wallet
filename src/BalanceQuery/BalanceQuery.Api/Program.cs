@@ -81,6 +81,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapBalanceEndpoint();
+app.MapHistoryEndpoint();
 app.MapHealthChecks("/healthz");
 
 app.Run();
