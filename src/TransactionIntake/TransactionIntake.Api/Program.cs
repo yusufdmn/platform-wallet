@@ -104,6 +104,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapMintEndpoint();
+app.MapBurnEndpoint();
 app.MapTransferEndpoint();
 app.MapCaptureEndpoint();
 app.MapVoidEndpoint();
