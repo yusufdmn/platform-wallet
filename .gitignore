@@ -30,6 +30,7 @@ coverage/
 
 # Roslyn / Rider / VS
 .vs/
+.vscode/
 .idea/
 *.sln.iml
 .vscode/*
