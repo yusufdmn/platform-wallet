@@ -39,6 +39,30 @@ public class Transaction
         };
     }
 
+    public static Transaction CreateBurn(
+        Guid    id,
+        Guid    correlationId,
+        decimal amount,
+        string  asset,
+        Guid    debitAccountId,
+        string  idempotencyKeyHash)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+
+        return new Transaction
+        {
+            Id                 = id,
+            CorrelationId      = correlationId,
+            Type               = TransactionType.Burn,
+            Status             = TransactionStatus.Pending,
+            Amount             = amount,
+            Asset              = asset,
+            DebitAccountId     = debitAccountId,
+            IdempotencyKeyHash = idempotencyKeyHash,
+            CreatedAt          = DateTimeOffset.UtcNow,
+        };
+    }
+
     public static Transaction CreateTransfer(
         Guid    id,
         Guid    correlationId,

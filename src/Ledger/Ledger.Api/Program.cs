@@ -48,6 +48,7 @@ builder.Services.AddLedgerInfrastructure(builder.Configuration);
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<MintFundsConsumer>();
+    x.AddConsumer<BurnFundsConsumer>();
     x.AddConsumer<HoldFundsConsumer>();
     x.AddConsumer<CaptureTransferConsumer>();
     x.AddConsumer<VoidHoldConsumer>();
