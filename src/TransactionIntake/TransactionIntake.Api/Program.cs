@@ -58,6 +58,7 @@ builder.Services.AddMassTransit(x =>
 
     x.AddConsumer<TransactionHeldConsumer>();
     x.AddConsumer<TransactionMintedConsumer>();
+    x.AddConsumer<TransactionBurnedConsumer>();
     x.AddConsumer<TransactionCapturedConsumer>();
     x.AddConsumer<TransactionVoidedConsumer>();
     x.AddConsumer<TransactionFailedConsumer>();
