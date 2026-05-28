@@ -31,7 +31,34 @@ public sealed class LedgerGrpcService(IAccountQueries accountQueries) : LedgerRe
         };
     }
 
-    public override Task<GetPostingsResponse> GetPostings(
-        GetPostingsRequest request, ServerCallContext context) =>
-        Task.FromResult(new GetPostingsResponse());
+    public override async Task<GetPostingsResponse> GetPostings(
+        GetPostingsRequest request, ServerCallContext context)
+    {
+        if (!Guid.TryParse(request.AccountId, out var accountId))
+        {
+            throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid account id."));
+        }
+
+        var page = await accountQueries.GetPostingsAsync(
+            accountId, request.Page, request.PageSize, context.CancellationToken);
+
+        var response = new GetPostingsResponse { TotalCount = page.TotalCount };
+        foreach (var item in page.Items)
+        {
+            response.Postings.Add(MapToDto(item));
+        }
+        return response;
+    }
+
+    private static PostingDto MapToDto(PostingHistoryItem item) => new()
+    {
+        Id           = item.Id.ToString(CultureInfo.InvariantCulture),
+        TxId         = item.TxId.ToString(),
+        AccountId    = item.AccountId.ToString(),
+        Asset        = item.Asset,
+        AmountSigned = item.AmountSigned.ToString("G", CultureInfo.InvariantCulture),
+        EntryKind    = item.EntryKind,
+        Phase        = item.Phase,
+        CreatedAt    = item.CreatedAt.ToString("o", CultureInfo.InvariantCulture),
+    };
 }
