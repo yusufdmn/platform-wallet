@@ -156,7 +156,8 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                     ctx.Saga.CreditAccountId))
                 .TransitionTo(Completed)
                 .Then(ctx => logger.LogInformation(
-                    "Saga {CorrelationId}: mint completed", ctx.Saga.CorrelationId)),
+                    "Saga {CorrelationId}: mint completed", ctx.Saga.CorrelationId))
+                .Finalize(),
 
             // Mint domain failure — business rule violated (no retry)
             When(MintFailed)
@@ -165,7 +166,8 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                 .TransitionTo(Failed)
                 .Then(ctx => logger.LogWarning(
                     "Saga {CorrelationId}: mint domain failure — {Reason}",
-                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
+                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
+                .Finalize(),
 
             // Mint system fault — infrastructure failure (retried → DLQ → failed_messages)
             When(MintFundsFaulted)
@@ -174,7 +176,8 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                 .TransitionTo(Failed)
                 .Then(ctx => logger.LogError(
                     "Saga {CorrelationId}: mint system fault — {Reason}",
-                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
+                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
+                .Finalize(),
 
             // Burn success
             When(FundsBurned)
@@ -185,7 +188,8 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                     ctx.Saga.CreditAccountId))
                 .TransitionTo(Completed)
                 .Then(ctx => logger.LogInformation(
-                    "Saga {CorrelationId}: burn completed", ctx.Saga.CorrelationId)),
+                    "Saga {CorrelationId}: burn completed", ctx.Saga.CorrelationId))
+                .Finalize(),
 
             // Burn domain failure — business rule violated (no retry)
             When(BurnFailed)
@@ -194,7 +198,8 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                 .TransitionTo(Failed)
                 .Then(ctx => logger.LogWarning(
                     "Saga {CorrelationId}: burn domain failure — {Reason}",
-                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
+                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
+                .Finalize(),
 
             // Burn system fault — infrastructure failure (retried → DLQ → failed_messages)
             When(BurnFundsFaulted)
@@ -203,7 +208,8 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                 .TransitionTo(Failed)
                 .Then(ctx => logger.LogError(
                     "Saga {CorrelationId}: burn system fault — {Reason}",
-                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
+                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
+                .Finalize(),
 
             // Hold success → publish TransactionHeld, wait for capture or void request
             When(FundsHeld)
@@ -223,7 +229,8 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                 .TransitionTo(Failed)
                 .Then(ctx => logger.LogWarning(
                     "Saga {CorrelationId}: hold domain failure — {Reason}",
-                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
+                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
+                .Finalize(),
 
             // Hold system fault — infrastructure failure
             When(HoldFundsFaulted)
@@ -232,7 +239,8 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                 .TransitionTo(Failed)
                 .Then(ctx => logger.LogError(
                     "Saga {CorrelationId}: hold system fault — {Reason}",
-                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason)));
+                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
+                .Finalize());
 
         During(Held,
             // Capture requested
@@ -266,7 +274,8 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                     ctx.Saga.CreditAccountId))
                 .TransitionTo(Completed)
                 .Then(ctx => logger.LogInformation(
-                    "Saga {CorrelationId}: transfer captured", ctx.Saga.CorrelationId)),
+                    "Saga {CorrelationId}: transfer captured", ctx.Saga.CorrelationId))
+                .Finalize(),
 
             // Capture domain failure → void to compensate
             When(CaptureFailed)
@@ -307,7 +316,8 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                 .TransitionTo(Failed)
                 .Then(ctx => logger.LogWarning(
                     "Saga {CorrelationId}: void hold domain failure — {Reason}",
-                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
+                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
+                .Finalize(),
 
             // VoidHold system fault → compensate failed, mark as failed
             When(VoidHoldFaulted)
@@ -316,7 +326,8 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                 .TransitionTo(Failed)
                 .Then(ctx => logger.LogError(
                     "Saga {CorrelationId}: void hold system fault — {Reason}",
-                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
+                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
+                .Finalize(),
 
             // Void success — if compensating then fail, else complete
             When(HoldVoided)
@@ -327,7 +338,8 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                         .TransitionTo(Failed)
                         .Then(ctx => logger.LogError(
                             "Saga {CorrelationId}: capture compensated via void — failed",
-                            ctx.Saga.CorrelationId)),
+                            ctx.Saga.CorrelationId))
+                        .Finalize(),
                     binder => binder
                         .Publish(ctx => new TransactionVoided(
                             ctx.Saga.CorrelationId,
@@ -336,7 +348,8 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                         .TransitionTo(Completed)
                         .Then(ctx => logger.LogInformation(
                             "Saga {CorrelationId}: hold voided by user request",
-                            ctx.Saga.CorrelationId))));
+                            ctx.Saga.CorrelationId))
+                        .Finalize()));
 
         SetCompletedWhenFinalized();
     }
