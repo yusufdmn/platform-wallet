@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using PlatformWallet.SagaOrchestrator.Infrastructure.HostedServices;
 using PlatformWallet.SagaOrchestrator.Infrastructure.Persistence;
 
 namespace PlatformWallet.SagaOrchestrator.Infrastructure;
@@ -16,6 +17,7 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<SagaDbContext>(opt =>
             opt.UseNpgsql(connStr, npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 5)));
         services.AddHostedService<DatabaseMigratorService>();
+        services.AddHostedService<HoldExpiryService>();
 
         return services;
     }
