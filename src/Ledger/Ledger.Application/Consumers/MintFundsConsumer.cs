@@ -40,9 +40,9 @@ public sealed class MintFundsConsumer(
             repository.AddPosting(debit);
             repository.AddPosting(credit);
 
-            await repository.SaveChangesAsync(ct);
-
             await context.Publish(new FundsMinted(msg.CorrelationId), ct);
+
+            await repository.SaveChangesAsync(ct);
 
             logger.LogInformation(
                 "Minted {Amount} {Asset} to account {AccountId} for tx {CorrelationId}",

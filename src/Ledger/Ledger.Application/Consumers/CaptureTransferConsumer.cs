@@ -46,9 +46,9 @@ public sealed class CaptureTransferConsumer(
             repository.AddPosting(debit);
             repository.AddPosting(credit);
 
-            await repository.SaveChangesAsync(ct);
-
             await context.Publish(new TransferCaptured(msg.CorrelationId), ct);
+
+            await repository.SaveChangesAsync(ct);
 
             logger.LogInformation(
                 "Captured {Amount} {Asset} from {DebitAccountId} to {CreditAccountId} for tx {CorrelationId}",

@@ -37,9 +37,9 @@ public sealed class HoldFundsConsumer(
             repository.AddPosting(debit);
             repository.AddPosting(credit);
 
-            await repository.SaveChangesAsync(ct);
-
             await context.Publish(new FundsHeld(msg.CorrelationId), ct);
+
+            await repository.SaveChangesAsync(ct);
 
             logger.LogInformation(
                 "Held {Amount} {Asset} on account {AccountId} for tx {CorrelationId}",
