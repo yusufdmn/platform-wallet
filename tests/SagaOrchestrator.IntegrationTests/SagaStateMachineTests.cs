@@ -54,14 +54,9 @@ public class SagaStateMachineTests
 
             await harness.Bus.Publish(new FundsMinted(correlationId));
 
-            // After FundsMinted, saga should be in Completed
-            (await sagaHarness.Exists(correlationId, machine => machine.Completed,
-                TimeSpan.FromSeconds(10)))
-                .Should().NotBeNull("saga must reach Completed state after FundsMinted");
-
             await harness.InactivityTask;
 
-            // Verify TransactionMinted was published by the saga
+            // Saga finalizes immediately on Completed, so assert via published event
             (await harness.Published.Any<TransactionMinted>(x =>
                 x.Context.Message.CorrelationId == correlationId))
                 .Should().BeTrue("saga must publish TransactionMinted on completion");
@@ -130,14 +125,12 @@ public class SagaStateMachineTests
             // brief settle — saga publishes VoidHold and stays in Processing (IsCompensating=true)
             await Task.Delay(500);
 
-            // Now send HoldVoided — saga lands in Failed
+            // Now send HoldVoided — saga lands in Failed and is finalized
             await harness.Bus.Publish(new HoldVoided(correlationId));
 
-            (await sagaHarness.Exists(correlationId, machine => machine.Failed,
-                TimeSpan.FromSeconds(10)))
-                .Should().NotBeNull("saga must land in Failed after capture compensation completes");
+            await harness.InactivityTask;
 
-            // TransactionFailed event must have been published
+            // Saga finalizes immediately on Failed, so assert via published event
             (await harness.Published.Any<TransactionFailed>(x =>
                 x.Context.Message.CorrelationId == correlationId))
                 .Should().BeTrue("saga must publish TransactionFailed on compensation path");

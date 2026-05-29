@@ -36,6 +36,9 @@ public class MintFundsConsumerTests(LedgerIntegrationFixture fixture)
         context.Message.Returns(msg);
         context.CancellationToken.Returns(CancellationToken.None);
 
+        var worldBefore = (await fixture.DbContext.Accounts.FindAsync(SystemAccounts.WorldId))!.Balance;
+        fixture.DbContext.ChangeTracker.Clear();
+
         await consumer.Consume(context);
 
         fixture.DbContext.ChangeTracker.Clear();
@@ -44,7 +47,7 @@ public class MintFundsConsumerTests(LedgerIntegrationFixture fixture)
         creditAccount!.Balance.Should().Be(amount);
 
         var world = await fixture.DbContext.Accounts.FindAsync(SystemAccounts.WorldId);
-        world!.Balance.Should().Be(-amount);
+        world!.Balance.Should().Be(worldBefore - amount);
 
         var postings = await fixture.DbContext.Postings
             .Where(p => p.TxId == correlationId)
