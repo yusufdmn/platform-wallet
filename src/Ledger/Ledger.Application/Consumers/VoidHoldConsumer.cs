@@ -37,9 +37,9 @@ public sealed class VoidHoldConsumer(
             repository.AddPosting(debit);
             repository.AddPosting(credit);
 
-            await repository.SaveChangesAsync(ct);
-
             await context.Publish(new HoldVoided(msg.CorrelationId), ct);
+
+            await repository.SaveChangesAsync(ct);
 
             logger.LogInformation(
                 "Voided hold of {Amount} {Asset} on account {AccountId} for tx {CorrelationId}",
