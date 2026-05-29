@@ -109,6 +109,7 @@ app.MapBurnEndpoint();
 app.MapTransferEndpoint();
 app.MapCaptureEndpoint();
 app.MapVoidEndpoint();
+app.MapAdminRetryVoidEndpoint();
 app.MapGetTransactionEndpoint();
 app.MapHealthChecks("/healthz");
 

@@ -41,6 +41,10 @@ public sealed class TransactionSagaStateConfiguration : IEntityTypeConfiguration
             .HasColumnName("failure_reason")
             .HasMaxLength(MaxReasonLength);
 
+        builder.Property(x => x.VoidAttempts)
+            .HasColumnName("void_attempts")
+            .HasDefaultValue(0);
+
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
