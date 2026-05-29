@@ -15,8 +15,9 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
     public State Submitted  { get; private set; } = null!;
     public State Processing { get; private set; } = null!;
     public State Held       { get; private set; } = null!;
-    public State Completed  { get; private set; } = null!;
-    public State Failed     { get; private set; } = null!;
+    public State Completed     { get; private set; } = null!;
+    public State Failed        { get; private set; } = null!;
+    public State VoidStranded  { get; private set; } = null!;
 
     // ── Events ────────────────────────────────────────────────────────────────
     public Event<TransactionSubmitted>      TransactionSubmitted     { get; private set; } = null!;
@@ -309,25 +310,23 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                     "Saga {CorrelationId}: capture system fault, voiding hold — {Reason}",
                     ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
 
-            // VoidHold domain failure → failed
+            // VoidHold domain failure → park as stranded; hold postings still live; operator must retry
             When(VoidFailed)
                 .Then(ctx => Fail(ctx.Saga, ctx.Message.Reason))
                 .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
-                .TransitionTo(Failed)
-                .Then(ctx => logger.LogWarning(
-                    "Saga {CorrelationId}: void hold domain failure — {Reason}",
-                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
-                .Finalize(),
+                .TransitionTo(VoidStranded)
+                .Then(ctx => logger.LogError(
+                    "Saga {CorrelationId}: void hold stranded (domain failure) — {Reason}",
+                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
 
-            // VoidHold system fault → compensate failed, mark as failed
+            // VoidHold system fault → park as stranded; hold postings still live; operator must retry
             When(VoidHoldFaulted)
                 .Then(ctx => Fail(ctx.Saga, FirstException(ctx.Message)))
                 .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
-                .TransitionTo(Failed)
+                .TransitionTo(VoidStranded)
                 .Then(ctx => logger.LogError(
-                    "Saga {CorrelationId}: void hold system fault — {Reason}",
-                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
-                .Finalize(),
+                    "Saga {CorrelationId}: void hold stranded (system fault) — {Reason}",
+                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason)),
 
             // Void success — if compensating then fail, else complete
             When(HoldVoided)
@@ -350,6 +349,25 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                             "Saga {CorrelationId}: hold voided by user request",
                             ctx.Saga.CorrelationId))
                         .Finalize()));
+
+        // Operator-driven retry from VoidStranded — reuses the existing VoidRequested event.
+        // IsCompensating is preserved on the row so the success branch routes correctly.
+        During(VoidStranded,
+            When(VoidRequested)
+                .Then(ctx =>
+                {
+                    ctx.Saga.VoidAttempts++;
+                    Touch(ctx.Saga);
+                })
+                .Publish(ctx => new VoidHold(
+                    ctx.Saga.CorrelationId,
+                    ctx.Saga.DebitAccountId!.Value,
+                    ctx.Saga.Amount,
+                    ctx.Saga.Asset))
+                .TransitionTo(Processing)
+                .Then(ctx => logger.LogInformation(
+                    "Saga {CorrelationId}: void retry requested (attempt {Attempt})",
+                    ctx.Saga.CorrelationId, ctx.Saga.VoidAttempts)));
 
         SetCompletedWhenFinalized();
     }
