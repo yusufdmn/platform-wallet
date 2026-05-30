@@ -16,6 +16,7 @@ internal sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> log
         var (statusCode, title) = exception switch
         {
             AccountNotFoundException or SystemAccountNotFoundException => (StatusCodes.Status404NotFound, "Not Found"),
+            InvalidAccountIdException or InvalidAmountException => (StatusCodes.Status400BadRequest, "Bad Request"),
             InsufficientFundsException or InsufficientHeldAmountException or AssetMismatchException => (StatusCodes.Status400BadRequest, "Bad Request"),
             _ => (StatusCodes.Status500InternalServerError, "Internal Server Error"),
         };

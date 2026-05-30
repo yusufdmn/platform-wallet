@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using PlatformWallet.TransactionIntake.Application.Exceptions;
 using PlatformWallet.TransactionIntake.Domain.Exceptions;
 
 namespace PlatformWallet.TransactionIntake.Api.ExceptionHandlers;

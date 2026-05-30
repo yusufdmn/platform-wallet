@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using PlatformWallet.Ledger.Api.Endpoints;
 using PlatformWallet.Ledger.Api.ExceptionHandlers;
+using PlatformWallet.Ledger.Api.Grpc;
 using PlatformWallet.Ledger.Application.Consumers;
 using PlatformWallet.Ledger.Application.GrpcServices;
 using PlatformWallet.Ledger.Domain.Exceptions;
@@ -86,7 +87,7 @@ builder.Services.AddMassTransit(x =>
     });
 });
 
-builder.Services.AddGrpc();
+builder.Services.AddGrpc(o => o.Interceptors.Add<DomainExceptionInterceptor>());
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
