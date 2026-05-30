@@ -2,9 +2,9 @@ using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using PlatformWallet.Contracts.Events;
-using PlatformWallet.TransactionIntake.Application.Exceptions;
 using PlatformWallet.TransactionIntake.Application.Persistence;
 using PlatformWallet.TransactionIntake.Domain;
+using PlatformWallet.TransactionIntake.Domain.Exceptions;
 
 namespace PlatformWallet.TransactionIntake.Application.Commands.RequestCapture;
 
