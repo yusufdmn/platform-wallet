@@ -1,8 +1,12 @@
+using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.RateLimiting;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
+using PlatformWallet.ApiGateway.Yarp.Endpoints;
 using PlatformWallet.ApiGateway.Yarp.ExceptionHandlers;
+using PlatformWallet.ApiGateway.Yarp.Infrastructure.Rabbit;
 using PlatformWallet.ApiGateway.Yarp.Middleware;
 using PlatformWallet.Observability;
 
@@ -56,6 +60,23 @@ var redisConnection = builder.Configuration["REDIS_CONNECTION"]
 
 builder.Services.AddStackExchangeRedisCache(o => o.Configuration = redisConnection);
 
+var rabbitMgmt = new RabbitMqManagementOptions
+{
+    BaseUrl  = builder.Configuration["RABBITMQ_MGMT_URL"]
+               ?? throw new InvalidOperationException("RABBITMQ_MGMT_URL is required"),
+    Username = builder.Configuration["RABBITMQ_DEFAULT_USER"] ?? "",
+    Password = builder.Configuration["RABBITMQ_DEFAULT_PASSWORD"] ?? "",
+    Vhost    = builder.Configuration["RABBITMQ_VHOST"] ?? "/",
+};
+builder.Services.AddSingleton(rabbitMgmt);
+builder.Services.AddHttpClient<IRabbitMqManagementClient, RabbitMqManagementClient>(client =>
+{
+    client.BaseAddress = new Uri(rabbitMgmt.BaseUrl.TrimEnd('/') + "/");
+    var token = Convert.ToBase64String(
+        Encoding.UTF8.GetBytes($"{rabbitMgmt.Username}:{rabbitMgmt.Password}"));
+    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", token);
+});
+
 builder.Services
     .AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
@@ -77,6 +98,7 @@ app.UseMiddleware<IdempotencyMiddleware>();
 app.UseMiddleware<CorrelationIdMiddleware>();
 
 app.MapHealthChecks("/healthz");
+app.MapDlqAdminEndpoints();
 app.MapReverseProxy();
 
 app.Run();
