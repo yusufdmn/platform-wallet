@@ -6,7 +6,7 @@ namespace PlatformWallet.Ledger.Api.Endpoints;
 internal static class InvariantEndpoint
 {
     private const string Route       = "/admin/invariants/zero-sum";
-    private const string AdminPolicy = "ledger:read";
+    private const string AdminPolicy = "ledger:admin";
 
     public static IEndpointRouteBuilder MapInvariantEndpoint(this IEndpointRouteBuilder app)
     {

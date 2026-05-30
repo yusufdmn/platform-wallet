@@ -239,10 +239,9 @@ These four scenarios pass on the live compose stack (`tests/EndToEnd.Tests/FullS
   Code + PKCE (ops console). Both flows driven by the same Keycloak realm,
   preloaded from `realm-export.json`.
 - **Authorization** — scope-based, three scopes:
-  - `ledger:write` — write verbs and admin invariant/saga endpoints (current gateway routing)
-  - `ledger:read`  — balance and transaction queries; also used by the invariant endpoint itself
-  - `ledger:admin` — defined in Keycloak and all services; gateway routing to `/admin/**`
-    will be tightened to require this scope as the admin surface grows
+  - `ledger:write` — write verbs (mint, burn, transfer)
+  - `ledger:read`  — balance and transaction queries
+  - `ledger:admin` — every `/admin/**` route, including the invariant endpoint and Ops Console surfaces
 - **Defense-in-depth scope re-validation** — every backend service re-validates
   the JWT and re-checks the scope, even though the gateway already did. The
   gateway is not a trust boundary.
