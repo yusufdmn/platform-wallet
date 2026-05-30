@@ -4,48 +4,66 @@
     <meta charset="UTF-8" />
     <title>Platform Wallet — Failed Webhooks</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 1200px; }
-        header { border-bottom: 1px solid #ddd; padding-bottom: 0.5rem; }
-        .controls { display: flex; gap: 0.5rem; margin-top: 1rem; align-items: center; flex-wrap: wrap; }
-        .controls label { display: flex; flex-direction: column; font-size: 0.85rem; }
-        .controls input { width: 7rem; }
-        table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
-        th, td { border: 1px solid #e3e3e3; padding: 0.3rem 0.5rem; text-align: left; font-size: 0.9rem; }
-        button { cursor: pointer; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .banner   { padding: 0.5rem; background: #fde68a; border: 1px solid #f59e0b; margin-bottom: 1rem; }
-        .progress { padding: 0.5rem; background: #dbeafe; border: 1px solid #3b82f6; margin-top: 1rem; }
-        .empty    { color: #666; margin-top: 1rem; }
-        code      { font-size: 0.85rem; }
-    </style>
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="../console.css" />
 </head>
 <body>
-<header>
-    <h1>Failed Webhooks</h1>
-    <p><a href="../">← Ops Console</a></p>
-</header>
-<div id="banner"   class="banner"   hidden></div>
-<div id="progress" class="progress" hidden></div>
-<div class="controls">
-    <label>Status
-        <select id="status-filter">
-            <option value="Failed" selected>Failed</option>
-            <option value="Retrying">Retrying</option>
-            <option value="Delivered">Delivered</option>
-            <option value="All">All</option>
-        </select>
-    </label>
-    <label>Interval (ms)
-        <input id="interval-ms" type="number" min="100" max="60000" value="1000" />
-    </label>
-    <label>Max
-        <input id="max-count" type="number" min="1" max="500" value="500" />
-    </label>
-    <button id="refresh">Refresh</button>
-    <button id="replay-all">Replay all (failed)</button>
+<div class="app-shell">
+    <header class="app-bar">
+        <div class="app-bar-inner">
+            <a class="brand" href="../">
+                <span class="brand-mark">PW</span>
+                <span class="brand-title">Platform Wallet<span class="brand-sub">Ops Console</span></span>
+            </a>
+            <nav class="app-nav">
+                <a href="../">Overview</a>
+                <a href="../sagas/">Sagas</a>
+                <a href="../dlq/">DLQ</a>
+                <a href="./" class="active">Webhooks</a>
+            </nav>
+            <span class="app-spacer"></span>
+            <span class="app-bar-meta"><span class="status-dot"></span>PKCE session</span>
+        </div>
+    </header>
+
+    <main class="page">
+        <p class="breadcrumb"><a href="../">Ops Console</a> <span class="sep">/</span> Failed Webhooks</p>
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Failed Webhooks</h1>
+                <p class="page-subtitle">Retry single deliveries or replay all failed ones with throttling.</p>
+            </div>
+        </div>
+
+        <div id="banner"   class="banner"   hidden></div>
+        <div id="progress" class="progress" hidden></div>
+
+        <div class="controls">
+            <label>Status
+                <select id="status-filter">
+                    <option value="Failed" selected>Failed</option>
+                    <option value="Retrying">Retrying</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="All">All</option>
+                </select>
+            </label>
+            <label>Interval (ms)
+                <input id="interval-ms" type="number" min="100" max="60000" value="1000" />
+            </label>
+            <label>Max
+                <input id="max-count" type="number" min="1" max="500" value="500" />
+            </label>
+            <span class="spacer"></span>
+            <button id="refresh" class="ghost">Refresh</button>
+            <button id="replay-all" class="primary">Replay all (failed)</button>
+        </div>
+
+        <div class="surface">
+            <div id="rows" class="table-wrap">Loading…</div>
+        </div>
+    </main>
 </div>
-<div id="rows">Loading…</div>
 <script src="../auth.js" defer></script>
 <script src="webhooks.js" defer></script>
 </body>

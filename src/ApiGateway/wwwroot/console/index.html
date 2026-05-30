@@ -4,37 +4,63 @@
     <meta charset="UTF-8" />
     <title>Platform Wallet — Ops Console</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 1100px; }
-        header { border-bottom: 1px solid #ddd; padding-bottom: 0.5rem; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-top: 2rem; }
-        .card { display: block; padding: 1.25rem; border: 1px solid #ddd; border-radius: 6px; text-decoration: none; color: inherit; }
-        .card:hover { border-color: #666; }
-        .card h2 { margin: 0 0 0.5rem 0; font-size: 1.1rem; }
-        .card p { margin: 0; color: #555; font-size: 0.9rem; }
-        #banner { background: #fde7e9; color: #8a1f1f; padding: 0.5rem; border-radius: 4px; }
-    </style>
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="console.css" />
 </head>
 <body>
-<header>
-    <h1>Platform Wallet — Ops Console</h1>
-    <p>PKCE-protected view over <code>/admin/**</code>. See TheMainPlan.md §0.11 &amp; §3.1.</p>
-</header>
-<div id="banner" hidden></div>
-<nav class="grid">
-    <a class="card" href="sagas/">
-        <h2>Sagas</h2>
-        <p>Inspect saga state, retry stranded voids.</p>
-    </a>
-    <a class="card" href="dlq/">
-        <h2>DLQ Replayer</h2>
-        <p>Peek and replay messages on RabbitMQ <code>_error</code> queues.</p>
-    </a>
-    <a class="card" href="webhooks/">
-        <h2>Failed Webhooks</h2>
-        <p>Retry single or bulk failed webhook deliveries.</p>
-    </a>
-</nav>
+<div class="app-shell">
+    <header class="app-bar">
+        <div class="app-bar-inner">
+            <a class="brand" href="./">
+                <span class="brand-mark">PW</span>
+                <span class="brand-title">Platform Wallet<span class="brand-sub">Ops Console</span></span>
+            </a>
+            <nav class="app-nav">
+                <a href="./" class="active">Overview</a>
+                <a href="sagas/">Sagas</a>
+                <a href="dlq/">DLQ</a>
+                <a href="webhooks/">Webhooks</a>
+            </nav>
+            <span class="app-spacer"></span>
+            <span class="app-bar-meta"><span class="status-dot"></span>PKCE session</span>
+        </div>
+    </header>
+
+    <main class="page">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Operations overview</h1>
+                <p class="page-subtitle">PKCE-protected view over <code>/admin/**</code>. See TheMainPlan.md §0.11 &amp; §3.1.</p>
+            </div>
+        </div>
+
+        <div id="banner" class="error" hidden></div>
+
+        <nav class="grid">
+            <a class="card" href="sagas/">
+                <div class="card-icon">SG</div>
+                <h2>Sagas</h2>
+                <p>Inspect transaction sagas, drill into state, and retry stranded voids.</p>
+                <span class="card-arrow">Open Sagas →</span>
+            </a>
+            <a class="card" href="dlq/">
+                <div class="card-icon">DQ</div>
+                <h2>DLQ Replayer</h2>
+                <p>Peek and replay messages parked on RabbitMQ <code>_error</code> queues.</p>
+                <span class="card-arrow">Open DLQ →</span>
+            </a>
+            <a class="card" href="webhooks/">
+                <div class="card-icon">WH</div>
+                <h2>Failed Webhooks</h2>
+                <p>Retry single or bulk-failed webhook deliveries with throttled replay.</p>
+                <span class="card-arrow">Open Webhooks →</span>
+            </a>
+        </nav>
+
+        <p class="footer-hint">Single-tenant deployment · Double-entry ledger · Zero-trust JWT at every hop.</p>
+    </main>
+</div>
 <script src="auth.js" defer></script>
 <script src="app.js" defer></script>
 </body>

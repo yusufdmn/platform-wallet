@@ -4,23 +4,45 @@
     <meta charset="UTF-8" />
     <title>Platform Wallet — DLQ Replayer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 1100px; }
-        header { border-bottom: 1px solid #ddd; padding-bottom: 0.5rem; }
-        table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
-        th, td { border: 1px solid #e3e3e3; padding: 0.3rem 0.5rem; text-align: left; }
-        button { cursor: pointer; }
-        .banner { padding: 0.5rem; background: #fde68a; border: 1px solid #f59e0b; margin-bottom: 1rem; }
-        .empty { color: #666; margin-top: 1rem; }
-    </style>
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="../console.css" />
 </head>
 <body>
-<header>
-    <h1>DLQ Replayer</h1>
-    <p><a href="../">← Ops Console</a></p>
-</header>
-<div id="banner" class="banner" hidden></div>
-<div id="queues">Loading…</div>
+<div class="app-shell">
+    <header class="app-bar">
+        <div class="app-bar-inner">
+            <a class="brand" href="../">
+                <span class="brand-mark">PW</span>
+                <span class="brand-title">Platform Wallet<span class="brand-sub">Ops Console</span></span>
+            </a>
+            <nav class="app-nav">
+                <a href="../">Overview</a>
+                <a href="../sagas/">Sagas</a>
+                <a href="./" class="active">DLQ</a>
+                <a href="../webhooks/">Webhooks</a>
+            </nav>
+            <span class="app-spacer"></span>
+            <span class="app-bar-meta"><span class="status-dot"></span>PKCE session</span>
+        </div>
+    </header>
+
+    <main class="page">
+        <p class="breadcrumb"><a href="../">Ops Console</a> <span class="sep">/</span> DLQ Replayer</p>
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">DLQ Replayer</h1>
+                <p class="page-subtitle">Inspect and replay messages parked on RabbitMQ <code>_error</code> queues.</p>
+            </div>
+        </div>
+
+        <div id="banner" class="banner" hidden></div>
+
+        <div class="surface">
+            <div id="queues" class="table-wrap">Loading…</div>
+        </div>
+    </main>
+</div>
 <script src="../auth.js" defer></script>
 <script src="dlq.js" defer></script>
 </body>

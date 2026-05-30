@@ -4,29 +4,51 @@
     <meta charset="UTF-8" />
     <title>Platform Wallet — Saga detail</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 900px; }
-        header { border-bottom: 1px solid #ddd; padding-bottom: 0.5rem; }
-        dl { display: grid; grid-template-columns: 180px 1fr; gap: 0.25rem 1rem; margin-top: 1rem; }
-        dt { color: #555; }
-        dd { margin: 0; }
-        button { cursor: pointer; padding: 0.4rem 0.8rem; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .banner { padding: 0.5rem; background: #fde68a; border: 1px solid #f59e0b; margin-bottom: 1rem; }
-        .actions { margin-top: 1.5rem; }
-        code { font-size: 0.9rem; }
-    </style>
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="../console.css" />
 </head>
 <body>
-<header>
-    <h1>Saga detail</h1>
-    <p><a href="./">← Sagas</a></p>
-</header>
-<div id="banner" class="banner" hidden></div>
-<div id="detail">Loading…</div>
-<div class="actions">
-    <button id="retry-void" disabled>Retry Void</button>
-    <span id="retry-hint" style="color:#555;font-size:0.9rem;margin-left:0.5rem;"></span>
+<div class="app-shell">
+    <header class="app-bar">
+        <div class="app-bar-inner">
+            <a class="brand" href="../">
+                <span class="brand-mark">PW</span>
+                <span class="brand-title">Platform Wallet<span class="brand-sub">Ops Console</span></span>
+            </a>
+            <nav class="app-nav">
+                <a href="../">Overview</a>
+                <a href="./" class="active">Sagas</a>
+                <a href="../dlq/">DLQ</a>
+                <a href="../webhooks/">Webhooks</a>
+            </nav>
+            <span class="app-spacer"></span>
+            <span class="app-bar-meta"><span class="status-dot"></span>PKCE session</span>
+        </div>
+    </header>
+
+    <main class="page">
+        <p class="breadcrumb">
+            <a href="../">Ops Console</a> <span class="sep">/</span>
+            <a href="./">Sagas</a> <span class="sep">/</span> Detail
+        </p>
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Saga detail</h1>
+                <p class="page-subtitle">Full state for a single correlation id.</p>
+            </div>
+        </div>
+
+        <div id="banner" class="banner" hidden></div>
+
+        <div class="surface">
+            <div id="detail">Loading…</div>
+            <div class="actions">
+                <button id="retry-void" class="primary" disabled>Retry Void</button>
+                <span id="retry-hint" class="hint"></span>
+            </div>
+        </div>
+    </main>
 </div>
 <script src="../auth.js" defer></script>
 <script src="detail.js" defer></script>

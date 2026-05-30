@@ -40,7 +40,7 @@ async function load() {
 function render(s) {
     const rows = [
         ["CorrelationId",     `<code>${escapeHtml(s.correlationId)}</code>`],
-        ["State",              escapeHtml(s.currentState)],
+        ["State",              stateBadge(s.currentState)],
         ["Type",               escapeHtml(s.transactionType)],
         ["Amount",            `${escapeHtml(String(s.amount))} ${escapeHtml(s.asset)}`],
         ["Debit account",      escapeHtml(s.debitAccountId ?? "—")],
@@ -51,7 +51,7 @@ function render(s) {
         ["Created",            escapeHtml(s.createdAt)],
         ["Updated",            escapeHtml(s.updatedAt)],
     ];
-    detailEl.innerHTML = `<dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
+    detailEl.innerHTML = `<dl class="detail">${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
 
     if (s.currentState === VOID_STRANDED) {
         retryBtn.disabled = false;
@@ -89,6 +89,20 @@ function escapeHtml(s) {
     return String(s ?? "").replace(/[&<>"']/g, c => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
     })[c]);
+}
+
+const STATE_TONE = {
+    Submitted:    "info",
+    Processing:   "info",
+    Held:         "warn",
+    Completed:    "ok",
+    Failed:       "err",
+    VoidStranded: "err",
+};
+
+function stateBadge(state) {
+    const tone = STATE_TONE[state] || "muted";
+    return `<span class="badge ${tone}">${escapeHtml(state)}</span>`;
 }
 
 retryBtn.addEventListener("click", retryVoid);
