@@ -2,6 +2,7 @@ using FluentAssertions;
 using FsCheck;
 using FsCheck.Xunit;
 using PlatformWallet.Ledger.Domain;
+using PlatformWallet.Ledger.Domain.Exceptions;
 using Xunit;
 
 namespace PlatformWallet.Ledger.UnitTests;
@@ -48,7 +49,7 @@ public class PostingPairBuilderTests
     public void BuildMint_throws_for_non_positive_amount(double amount)
     {
         var act = () => PostingPairBuilder.BuildMint(TxId, AccountId, (decimal)amount, "USD");
-        act.Should().Throw<ArgumentOutOfRangeException>();
+        act.Should().Throw<InvalidAmountException>();
     }
 
     // ── BuildBurn ────────────────────────────────────────────────────────────

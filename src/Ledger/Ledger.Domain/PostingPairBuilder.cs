@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using PlatformWallet.Ledger.Domain.Exceptions;
 
 namespace PlatformWallet.Ledger.Domain;
 
@@ -9,7 +10,7 @@ public static class PostingPairBuilder
     public static (Posting Debit, Posting Credit) BuildMint(
         Guid txId, Guid creditAccountId, decimal amount, string asset)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        EnsurePositive(amount);
 
         var debit  = Posting.Create(txId, SystemAccounts.WorldId, asset, -amount, EntryKind.Debit,  Phase.Mint);
         var credit = Posting.Create(txId, creditAccountId,        asset, +amount, EntryKind.Credit, Phase.Mint);
@@ -21,7 +22,7 @@ public static class PostingPairBuilder
     public static (Posting Debit, Posting Credit) BuildBurn(
         Guid txId, Guid debitAccountId, decimal amount, string asset)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        EnsurePositive(amount);
 
         var debit  = Posting.Create(txId, debitAccountId,         asset, -amount, EntryKind.Debit,  Phase.Burn);
         var credit = Posting.Create(txId, SystemAccounts.WorldId, asset, +amount, EntryKind.Credit, Phase.Burn);
@@ -33,7 +34,7 @@ public static class PostingPairBuilder
     public static (Posting Debit, Posting Credit) BuildHold(
         Guid txId, Guid debitAccountId, decimal amount, string asset)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        EnsurePositive(amount);
 
         var debit  = Posting.Create(txId, debitAccountId,           asset, -amount, EntryKind.Debit,  Phase.Hold);
         var credit = Posting.Create(txId, SystemAccounts.HeldPoolId, asset, +amount, EntryKind.Credit, Phase.Hold);
@@ -45,7 +46,7 @@ public static class PostingPairBuilder
     public static (Posting Debit, Posting Credit) BuildCapture(
         Guid txId, Guid debitAccountId, Guid creditAccountId, decimal amount, string asset)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        EnsurePositive(amount);
 
         var debit  = Posting.Create(txId, debitAccountId,  asset, -amount, EntryKind.Debit,  Phase.Capture);
         var credit = Posting.Create(txId, creditAccountId, asset, +amount, EntryKind.Credit, Phase.Capture);
@@ -57,12 +58,20 @@ public static class PostingPairBuilder
     public static (Posting Debit, Posting Credit) BuildVoid(
         Guid txId, Guid debitAccountId, decimal amount, string asset)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        EnsurePositive(amount);
 
         var debit  = Posting.Create(txId, SystemAccounts.HeldPoolId, asset, -amount, EntryKind.Debit,  Phase.Void);
         var credit = Posting.Create(txId, debitAccountId,            asset, +amount, EntryKind.Credit, Phase.Void);
 
         Debug.Assert(debit.AmountSigned + credit.AmountSigned == 0);
         return (debit, credit);
+    }
+
+    private static void EnsurePositive(decimal amount)
+    {
+        if (amount <= 0)
+        {
+            throw new InvalidAmountException(amount);
+        }
     }
 }

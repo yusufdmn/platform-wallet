@@ -28,13 +28,13 @@ public class Account
 
     public void ApplyCredit(decimal amount)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        EnsurePositive(amount);
         Balance += amount;
     }
 
     public void ApplyDebit(decimal amount)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        EnsurePositive(amount);
         if (!IsSystem && Balance < amount)
         {
             throw new InsufficientFundsException(Id, amount, Balance);
@@ -45,7 +45,7 @@ public class Account
 
     public void ReserveHold(decimal amount)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        EnsurePositive(amount);
         if (!IsSystem && Balance < amount)
         {
             throw new InsufficientFundsException(Id, amount, Balance);
@@ -57,7 +57,7 @@ public class Account
 
     public void ReleaseHold(decimal amount)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        EnsurePositive(amount);
         if (HeldAmount < amount)
         {
             throw new InsufficientHeldAmountException(Id, amount, HeldAmount);
@@ -69,12 +69,20 @@ public class Account
 
     public void CaptureHeld(decimal amount)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        EnsurePositive(amount);
         if (HeldAmount < amount)
         {
             throw new InsufficientHeldAmountException(Id, amount, HeldAmount);
         }
 
         HeldAmount -= amount;
+    }
+
+    private static void EnsurePositive(decimal amount)
+    {
+        if (amount <= 0)
+        {
+            throw new InvalidAmountException(amount);
+        }
     }
 }
