@@ -64,13 +64,16 @@ services:
     # The token issuer will be whatever URL Keycloak is accessed from, so KEYCLOAK_AUTHORITY in
     # .env must match the URL clients use to reach this container (e.g. http://<server-ip>:8088).
     #
-    # Entrypoint: substitutes ${OPS_ADMIN_PASSWORD} and ${KEYCLOAK_CLIENT_SECRET} from env
-    # into the realm template before Keycloak imports it, so no credentials are hard-coded
-    # in realm-export.json.
+    # Entrypoint: wipes the H2 dev DB, substitutes ${OPS_ADMIN_PASSWORD} and
+    # ${KEYCLOAK_CLIENT_SECRET} into the realm template, then runs `start-dev --import-realm`.
+    # Wiping H2 first guarantees `--import-realm` does not skip-if-exists, so realm-export.json
+    # edits (e.g. new redirect URIs) always take effect on restart.
+    # NOTE: a separate `kc.sh import` step does not work — its storage config does not match
+    # `start-dev`'s, so the imported realm is invisible to the running server.
     entrypoint:
       - /bin/sh
       - -c
-      - "mkdir -p /opt/keycloak/data/import && sed -e 's|$${OPS_ADMIN_PASSWORD}|'\"$$OPS_ADMIN_PASSWORD\"'|g' -e 's|$${KEYCLOAK_CLIENT_SECRET}|'\"$$KEYCLOAK_CLIENT_SECRET\"'|g' /tmp/realm-export.json.tpl > /opt/keycloak/data/import/realm-export.json && exec /opt/keycloak/bin/kc.sh start-dev --import-realm"
+      - "rm -rf /opt/keycloak/data/h2 && mkdir -p /opt/keycloak/data/import && sed -e 's|$${OPS_ADMIN_PASSWORD}|'\"$$OPS_ADMIN_PASSWORD\"'|g' -e 's|$${KEYCLOAK_CLIENT_SECRET}|'\"$$KEYCLOAK_CLIENT_SECRET\"'|g' /tmp/realm-export.json.tpl > /opt/keycloak/data/import/realm-export.json && exec /opt/keycloak/bin/kc.sh start-dev --import-realm"
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}

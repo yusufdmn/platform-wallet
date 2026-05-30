@@ -48,7 +48,7 @@ function render(items) {
     const rows = items.map(s => `
         <tr>
             <td><code>${escapeHtml(s.correlationId)}</code></td>
-            <td>${escapeHtml(s.currentState)}</td>
+            <td>${stateBadge(s.currentState)}</td>
             <td>${escapeHtml(s.transactionType)}</td>
             <td>${escapeHtml(String(s.amount))} ${escapeHtml(s.asset)}</td>
             <td>${escapeHtml(s.createdAt)}</td>
@@ -71,6 +71,20 @@ function escapeHtml(s) {
     return String(s ?? "").replace(/[&<>"']/g, c => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
     })[c]);
+}
+
+const STATE_TONE = {
+    Submitted:    "info",
+    Processing:   "info",
+    Held:         "warn",
+    Completed:    "ok",
+    Failed:       "err",
+    VoidStranded: "err",
+};
+
+function stateBadge(state) {
+    const tone = STATE_TONE[state] || "muted";
+    return `<span class="badge ${tone}">${escapeHtml(state)}</span>`;
 }
 
 stateSel.addEventListener("change", () => { skip = 0; load(); });

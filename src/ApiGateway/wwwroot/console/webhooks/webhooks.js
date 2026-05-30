@@ -46,12 +46,12 @@ function render(items) {
             <td>${r.id}</td>
             <td>${escapeHtml(r.eventType)}</td>
             <td><code>${escapeHtml(r.correlationId)}</code></td>
-            <td>${escapeHtml(r.status)}</td>
+            <td>${statusBadge(r.status)}</td>
             <td>${r.retryCount ?? 0}</td>
-            <td>${r.lastHttpStatusCode ?? "—"}</td>
+            <td>${httpBadge(r.lastHttpStatusCode)}</td>
             <td>${escapeHtml(r.failedAt ?? "")}</td>
             <td>${escapeHtml(r.retriedAt ?? "—")}</td>
-            <td><button data-id="${r.id}" class="retry-one">Retry</button></td>
+            <td><button data-id="${r.id}" class="retry-one sm">Retry</button></td>
         </tr>
     `).join("");
     rowsEl.innerHTML = `
@@ -158,6 +158,29 @@ function escapeHtml(s) {
     return String(s ?? "").replace(/[&<>"']/g, c => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
     })[c]);
+}
+
+const STATUS_TONE = {
+    Failed:    "err",
+    Retrying:  "warn",
+    Delivered: "ok",
+    Pending:   "info",
+};
+
+function statusBadge(status) {
+    const tone = STATUS_TONE[status] || "muted";
+    return `<span class="badge ${tone}">${escapeHtml(status)}</span>`;
+}
+
+function httpBadge(code) {
+    if (code === null || code === undefined || code === "") return '<span class="badge muted">—</span>';
+    const n = Number(code);
+    let tone = "muted";
+    if (n >= 200 && n < 300) tone = "ok";
+    else if (n >= 300 && n < 400) tone = "info";
+    else if (n >= 400 && n < 500) tone = "warn";
+    else if (n >= 500) tone = "err";
+    return `<span class="badge ${tone}">${escapeHtml(String(code))}</span>`;
 }
 
 statusSel.addEventListener("change", loadFailed);

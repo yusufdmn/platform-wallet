@@ -4,15 +4,21 @@
     <meta charset="UTF-8" />
     <title>Platform Wallet — Signing in…</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 600px; }
-        #error { color: #b00020; white-space: pre-wrap; display: none; }
-    </style>
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="console.css" />
 </head>
 <body>
-    <p id="status">Signing in…</p>
-    <p id="error"></p>
-    <script src="auth.js" defer></script>
-    <script src="callback.js" defer></script>
+<div class="signin">
+    <div class="signin-card">
+        <div class="brand-mark">PW</div>
+        <h1>Platform Wallet</h1>
+        <p id="status">Signing in…</p>
+        <div class="spinner" aria-hidden="true"></div>
+        <p id="error"></p>
+    </div>
+</div>
+<script src="auth.js" defer></script>
+<script src="callback.js" defer></script>
 </body>
 </html>

@@ -4,23 +4,47 @@
     <meta charset="UTF-8" />
     <title>Platform Wallet — DLQ Inspect</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 1100px; }
-        header { border-bottom: 1px solid #ddd; padding-bottom: 0.5rem; }
-        pre { background: #f6f6f6; padding: 0.5rem; overflow-x: auto; max-height: 12em; }
-        .row { border: 1px solid #e3e3e3; padding: 0.5rem; margin: 0.5rem 0; }
-        button { cursor: pointer; }
-        .banner { padding: 0.5rem; background: #fde68a; border: 1px solid #f59e0b; margin-bottom: 1rem; }
-        .empty { color: #666; }
-    </style>
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="../console.css" />
 </head>
 <body>
-<header>
-    <h1>DLQ Inspect — <span id="queue-name"></span></h1>
-    <p><a href="./">← Queues</a></p>
-</header>
-<div id="banner" class="banner" hidden></div>
-<div id="messages">Loading…</div>
+<div class="app-shell">
+    <header class="app-bar">
+        <div class="app-bar-inner">
+            <a class="brand" href="../">
+                <span class="brand-mark">PW</span>
+                <span class="brand-title">Platform Wallet<span class="brand-sub">Ops Console</span></span>
+            </a>
+            <nav class="app-nav">
+                <a href="../">Overview</a>
+                <a href="../sagas/">Sagas</a>
+                <a href="./" class="active">DLQ</a>
+                <a href="../webhooks/">Webhooks</a>
+            </nav>
+            <span class="app-spacer"></span>
+            <span class="app-bar-meta"><span class="status-dot"></span>PKCE session</span>
+        </div>
+    </header>
+
+    <main class="page">
+        <p class="breadcrumb">
+            <a href="../">Ops Console</a> <span class="sep">/</span>
+            <a href="./">DLQ Replayer</a> <span class="sep">/</span>
+            <span id="queue-name"></span>
+        </p>
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">DLQ Inspect</h1>
+                <p class="page-subtitle">Peek payloads and replay one at a time.</p>
+            </div>
+        </div>
+
+        <div id="banner" class="banner" hidden></div>
+
+        <div id="messages">Loading…</div>
+    </main>
+</div>
 <script src="../auth.js" defer></script>
 <script src="inspect.js" defer></script>
 </body>

@@ -94,8 +94,8 @@ public static class SagaAdminEndpoints
         Guid     CreditAccountId,
         decimal  Amount,
         string   Asset,
-        DateTimeOffset CreatedAt,
-        DateTimeOffset UpdatedAt);
+        DateTime CreatedAt,
+        DateTime UpdatedAt);
 
     private sealed record SagaDetailRow(
         Guid     CorrelationId,
@@ -108,6 +108,6 @@ public static class SagaAdminEndpoints
         string?  FailureReason,
         int      VoidAttempts,
         Guid?    HoldExpiryTokenId,
-        DateTimeOffset CreatedAt,
-        DateTimeOffset UpdatedAt);
+        DateTime CreatedAt,
+        DateTime UpdatedAt);
 }

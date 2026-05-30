@@ -4,42 +4,64 @@
     <meta charset="UTF-8" />
     <title>Platform Wallet — Sagas</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 1200px; }
-        header { border-bottom: 1px solid #ddd; padding-bottom: 0.5rem; }
-        .controls { display: flex; gap: 0.5rem; margin-top: 1rem; align-items: center; flex-wrap: wrap; }
-        table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
-        th, td { border: 1px solid #e3e3e3; padding: 0.3rem 0.5rem; text-align: left; font-size: 0.9rem; }
-        button { cursor: pointer; }
-        .banner { padding: 0.5rem; background: #fde68a; border: 1px solid #f59e0b; margin-bottom: 1rem; }
-        .empty  { color: #666; margin-top: 1rem; }
-        code    { font-size: 0.85rem; }
-    </style>
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="../console.css" />
 </head>
 <body>
-<header>
-    <h1>Sagas</h1>
-    <p><a href="../">← Ops Console</a></p>
-</header>
-<div id="banner" class="banner" hidden></div>
-<div class="controls">
-    <label>State:
-        <select id="state-filter">
-            <option value="">All</option>
-            <option value="Submitted">Submitted</option>
-            <option value="Processing">Processing</option>
-            <option value="Held">Held</option>
-            <option value="Completed">Completed</option>
-            <option value="Failed">Failed</option>
-            <option value="VoidStranded">VoidStranded</option>
-        </select>
-    </label>
-    <button id="refresh">Refresh</button>
-    <button id="prev">← Prev</button>
-    <button id="next">Next →</button>
-    <span id="page-info"></span>
+<div class="app-shell">
+    <header class="app-bar">
+        <div class="app-bar-inner">
+            <a class="brand" href="../">
+                <span class="brand-mark">PW</span>
+                <span class="brand-title">Platform Wallet<span class="brand-sub">Ops Console</span></span>
+            </a>
+            <nav class="app-nav">
+                <a href="../">Overview</a>
+                <a href="./" class="active">Sagas</a>
+                <a href="../dlq/">DLQ</a>
+                <a href="../webhooks/">Webhooks</a>
+            </nav>
+            <span class="app-spacer"></span>
+            <span class="app-bar-meta"><span class="status-dot"></span>PKCE session</span>
+        </div>
+    </header>
+
+    <main class="page">
+        <p class="breadcrumb"><a href="../">Ops Console</a> <span class="sep">/</span> Sagas</p>
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Sagas</h1>
+                <p class="page-subtitle">Inspect transaction saga state and replay stranded voids.</p>
+            </div>
+        </div>
+
+        <div id="banner" class="banner" hidden></div>
+
+        <div class="controls">
+            <label>State
+                <select id="state-filter">
+                    <option value="">All</option>
+                    <option value="Submitted">Submitted</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Held">Held</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Failed">Failed</option>
+                    <option value="VoidStranded">VoidStranded</option>
+                </select>
+            </label>
+            <span class="spacer"></span>
+            <button id="refresh" class="ghost">Refresh</button>
+            <button id="prev">← Prev</button>
+            <button id="next">Next →</button>
+            <span id="page-info"></span>
+        </div>
+
+        <div class="surface">
+            <div id="rows" class="table-wrap">Loading…</div>
+        </div>
+    </main>
 </div>
-<div id="rows">Loading…</div>
 <script src="../auth.js" defer></script>
 <script src="sagas.js" defer></script>
 </body>

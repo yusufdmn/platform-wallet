@@ -35,10 +35,10 @@ function render(queues) {
     const rows = queues.map(q => `
         <tr>
             <td><code>${escapeHtml(q.name)}</code></td>
-            <td>${q.messages}</td>
-            <td>
-                <a href="inspect.html?queue=${encodeURIComponent(q.name)}">Inspect</a>
-                <button data-queue="${escapeHtml(q.name)}" class="replay-all">Replay all</button>
+            <td>${countBadge(q.messages)}</td>
+            <td class="row-actions">
+                <a class="btn sm ghost" href="inspect.html?queue=${encodeURIComponent(q.name)}">Inspect</a>
+                <button data-queue="${escapeHtml(q.name)}" class="replay-all sm danger">Replay all</button>
             </td>
         </tr>
     `).join("");
@@ -80,6 +80,12 @@ function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
     })[c]);
+}
+
+function countBadge(n) {
+    const value = Number(n) || 0;
+    const tone  = value === 0 ? "ok" : value < 10 ? "warn" : "err";
+    return `<span class="badge ${tone}">${value}</span>`;
 }
 
 (async () => {
