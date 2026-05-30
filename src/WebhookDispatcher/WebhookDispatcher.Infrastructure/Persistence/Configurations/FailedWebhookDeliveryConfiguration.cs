@@ -5,6 +5,8 @@ namespace PlatformWallet.WebhookDispatcher.Infrastructure.Persistence.Configurat
 
 internal sealed class FailedWebhookDeliveryConfiguration : IEntityTypeConfiguration<FailedWebhookDelivery>
 {
+    private const int MaxStatusLength = 16;
+
     public void Configure(EntityTypeBuilder<FailedWebhookDelivery> builder)
     {
         builder.ToTable("failed_webhook_deliveries");
@@ -19,6 +21,19 @@ internal sealed class FailedWebhookDeliveryConfiguration : IEntityTypeConfigurat
         builder.Property(x => x.LastHttpResponseBody).HasMaxLength(8192);
         builder.Property(x => x.FailedAt).IsRequired();
 
+        builder.Property(x => x.Status)
+            .HasConversion<string>()
+            .HasMaxLength(MaxStatusLength)
+            .HasDefaultValue(FailedDeliveryStatus.Failed)
+            .IsRequired();
+
+        builder.Property(x => x.RetryCount)
+            .HasDefaultValue(0)
+            .IsRequired();
+
+        builder.Property(x => x.RetriedAt);
+
         builder.HasIndex(x => x.CorrelationId);
+        builder.HasIndex(x => x.Status);
     }
 }
