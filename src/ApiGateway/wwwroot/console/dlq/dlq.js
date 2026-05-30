@@ -1,18 +1,19 @@
-// DLQ queue list. PKCE-protected; expects an access token in localStorage at
-// `pw.access_token` (same scheme as the rest of the console — to be wired up
-// when the PKCE flow lands).
+// DLQ queue list. PKCE-protected — uses window.PwAuth (loaded from ../auth.js).
 const banner   = document.getElementById("banner");
 const queuesEl = document.getElementById("queues");
 
 const PEEK_LIMIT = 50;
 
-const token  = () => localStorage.getItem("pw.access_token") || "";
-const auth   = () => ({ Authorization: "Bearer " + token() });
-const fail   = (msg) => { banner.textContent = msg; banner.hidden = false; };
+const auth = () => window.PwAuth.authHeader();
+const fail = (msg) => { banner.textContent = msg; banner.hidden = false; };
 
 async function loadQueues() {
     try {
         const res = await fetch("/admin/dlq/", { headers: auth() });
+        if (res.status === 401) {
+            await window.PwAuth.redirectToLogin();
+            return;
+        }
         if (!res.ok) {
             fail("Failed to list DLQ queues: HTTP " + res.status);
             queuesEl.innerHTML = "";
@@ -59,6 +60,10 @@ async function replayAll(queue) {
             method: "POST",
             headers: auth(),
         });
+        if (res.status === 401) {
+            await window.PwAuth.redirectToLogin();
+            return;
+        }
         const body = await res.json().catch(() => ({}));
         if (res.ok) {
             alert(`Replayed ${body.replayed ?? 0} messages.`);
@@ -77,7 +82,10 @@ function escapeHtml(s) {
     })[c]);
 }
 
-loadQueues();
+(async () => {
+    await window.PwAuth.requireLogin();
+    loadQueues();
+})();
 
 // Expose for inspect.js
 window.__pwDlq = { PEEK_LIMIT, auth, fail, escapeHtml };
