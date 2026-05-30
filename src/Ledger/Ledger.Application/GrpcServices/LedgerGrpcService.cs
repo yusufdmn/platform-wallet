@@ -2,6 +2,7 @@ using System.Globalization;
 using Grpc.Core;
 using PlatformWallet.Grpc.Protos;
 using PlatformWallet.Ledger.Application.Persistence;
+using PlatformWallet.Ledger.Domain.Exceptions;
 
 namespace PlatformWallet.Ledger.Application.GrpcServices;
 
@@ -12,14 +13,14 @@ public sealed class LedgerGrpcService(IAccountQueries accountQueries) : LedgerRe
     {
         if (!Guid.TryParse(request.AccountId, out var accountId))
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid account id."));
+            throw new InvalidAccountIdException(request.AccountId);
         }
 
         var dto = await accountQueries.GetBalanceAsync(accountId, context.CancellationToken);
 
         if (dto is null)
         {
-            throw new RpcException(new Status(StatusCode.NotFound, $"Account {accountId} not found."));
+            throw new AccountNotFoundException(accountId);
         }
 
         return new GetAccountBalanceResponse
@@ -36,7 +37,7 @@ public sealed class LedgerGrpcService(IAccountQueries accountQueries) : LedgerRe
     {
         if (!Guid.TryParse(request.AccountId, out var accountId))
         {
-            throw new RpcException(new Status(StatusCode.InvalidArgument, "Invalid account id."));
+            throw new InvalidAccountIdException(request.AccountId);
         }
 
         var page = await accountQueries.GetPostingsAsync(
