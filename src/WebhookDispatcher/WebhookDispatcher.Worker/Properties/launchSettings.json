@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "WebhookDispatcher.Worker": {
+      "commandName": "Project",
+      "launchBrowser": false,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "http://localhost:14043"
+    }
+  }
+}
