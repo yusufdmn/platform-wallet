@@ -7,23 +7,28 @@ const messages  = document.getElementById("messages");
 const params = new URLSearchParams(window.location.search);
 const queue  = params.get("queue");
 
-if (!queue) {
-    banner.textContent = "Missing ?queue= parameter.";
-    banner.hidden = false;
-} else {
+const auth = () => window.PwAuth.authHeader();
+const fail = (msg) => { banner.textContent = msg; banner.hidden = false; };
+
+(async () => {
+    await window.PwAuth.requireLogin();
+    if (!queue) {
+        fail("Missing ?queue= parameter.");
+        return;
+    }
     queueName.textContent = queue;
     loadMessages();
-}
-
-const token = () => localStorage.getItem("pw.access_token") || "";
-const auth  = () => ({ Authorization: "Bearer " + token() });
-const fail  = (msg) => { banner.textContent = msg; banner.hidden = false; };
+})();
 
 async function loadMessages() {
     try {
         const res = await fetch(`/admin/dlq/${encodeURIComponent(queue)}?take=${PEEK_LIMIT}`, {
             headers: auth(),
         });
+        if (res.status === 401) {
+            await window.PwAuth.redirectToLogin();
+            return;
+        }
         if (!res.ok) {
             fail("Failed to peek messages: HTTP " + res.status);
             messages.innerHTML = "";
@@ -60,6 +65,10 @@ async function replayOne() {
             method: "POST",
             headers: auth(),
         });
+        if (res.status === 401) {
+            await window.PwAuth.redirectToLogin();
+            return;
+        }
         if (res.status === 204) {
             alert("Queue was already empty.");
         } else if (res.ok) {
