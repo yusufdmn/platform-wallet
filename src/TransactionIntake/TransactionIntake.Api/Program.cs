@@ -56,6 +56,8 @@ builder.Services.AddMassTransit(x =>
 {
     x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("intake", false));
 
+    x.AddDelayedMessageScheduler();
+
     x.AddConsumer<TransactionHeldConsumer>();
     x.AddConsumer<TransactionMintedConsumer>();
     x.AddConsumer<TransactionBurnedConsumer>();
@@ -82,6 +84,8 @@ builder.Services.AddMassTransit(x =>
             h.Password(configuration["RABBITMQ_DEFAULT_PASSWORD"]!);
         });
 
+        cfg.UseDelayedMessageScheduler();
+
         cfg.UseMessageRetry(r =>
         {
             r.Interval(3, TimeSpan.FromSeconds(5));
@@ -91,6 +95,11 @@ builder.Services.AddMassTransit(x =>
             r.Ignore<NullReferenceException>();
             r.Ignore<InvalidCastException>();
         });
+
+        cfg.UseScheduledRedelivery(r => r.Intervals(
+            TimeSpan.FromMinutes(1),
+            TimeSpan.FromMinutes(5),
+            TimeSpan.FromMinutes(30)));
 
         cfg.ConfigureEndpoints(ctx);
     });
