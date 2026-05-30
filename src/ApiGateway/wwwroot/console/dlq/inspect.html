@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Platform Wallet — DLQ Inspect</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 1100px; }
+        header { border-bottom: 1px solid #ddd; padding-bottom: 0.5rem; }
+        pre { background: #f6f6f6; padding: 0.5rem; overflow-x: auto; max-height: 12em; }
+        .row { border: 1px solid #e3e3e3; padding: 0.5rem; margin: 0.5rem 0; }
+        button { cursor: pointer; }
+        .banner { padding: 0.5rem; background: #fde68a; border: 1px solid #f59e0b; margin-bottom: 1rem; }
+        .empty { color: #666; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>DLQ Inspect — <span id="queue-name"></span></h1>
+    <p><a href="./">← Queues</a></p>
+</header>
+<div id="banner" class="banner" hidden></div>
+<div id="messages">Loading…</div>
+<script src="inspect.js" defer></script>
+</body>
+</html>
