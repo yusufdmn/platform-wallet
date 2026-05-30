@@ -21,11 +21,13 @@ var host = Host.CreateDefaultBuilder(args)
             x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("webhook", false));
 
             x.AddConsumer<TransactionMintedConsumer>();
+            x.AddConsumer<TransactionBurnedConsumer>();
             x.AddConsumer<TransactionCapturedConsumer>();
             x.AddConsumer<TransactionVoidedConsumer>();
             x.AddConsumer<TransactionFailedConsumer>();
 
             x.AddConsumer<WebhookFaultConsumer<TransactionMinted>>();
+            x.AddConsumer<WebhookFaultConsumer<TransactionBurned>>();
             x.AddConsumer<WebhookFaultConsumer<TransactionCaptured>>();
             x.AddConsumer<WebhookFaultConsumer<TransactionVoided>>();
             x.AddConsumer<WebhookFaultConsumer<TransactionFailed>>();

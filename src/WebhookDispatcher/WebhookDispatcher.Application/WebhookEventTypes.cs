@@ -5,6 +5,7 @@ namespace PlatformWallet.WebhookDispatcher.Application;
 public static class WebhookEventTypes
 {
     public const string TransactionMinted   = "transaction.minted";
+    public const string TransactionBurned   = "transaction.burned";
     public const string TransactionCaptured = "transaction.captured";
     public const string TransactionVoided   = "transaction.voided";
     public const string TransactionFailed   = "transaction.failed";
@@ -12,6 +13,7 @@ public static class WebhookEventTypes
     private static readonly Dictionary<Type, string> Map = new()
     {
         [typeof(TransactionMinted)]   = TransactionMinted,
+        [typeof(TransactionBurned)]   = TransactionBurned,
         [typeof(TransactionCaptured)] = TransactionCaptured,
         [typeof(TransactionVoided)]   = TransactionVoided,
         [typeof(TransactionFailed)]   = TransactionFailed,
