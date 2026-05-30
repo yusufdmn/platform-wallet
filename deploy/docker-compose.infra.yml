@@ -65,12 +65,13 @@ services:
     # .env must match the URL clients use to reach this container (e.g. http://<server-ip>:8088).
     #
     # Entrypoint: substitutes ${OPS_ADMIN_PASSWORD} and ${KEYCLOAK_CLIENT_SECRET} from env
-    # into the realm template before Keycloak imports it, so no credentials are hard-coded
-    # in realm-export.json.
+    # into the realm template, then runs `kc.sh import --override true` so realm-export.json
+    # changes (e.g. new redirect URIs) overwrite the persisted realm on every restart.
+    # `start-dev --import-realm` alone would skip-if-exists and keep stale config.
     entrypoint:
       - /bin/sh
       - -c
-      - "mkdir -p /opt/keycloak/data/import && sed -e 's|$${OPS_ADMIN_PASSWORD}|'\"$$OPS_ADMIN_PASSWORD\"'|g' -e 's|$${KEYCLOAK_CLIENT_SECRET}|'\"$$KEYCLOAK_CLIENT_SECRET\"'|g' /tmp/realm-export.json.tpl > /opt/keycloak/data/import/realm-export.json && exec /opt/keycloak/bin/kc.sh start-dev --import-realm"
+      - "mkdir -p /opt/keycloak/data/import && sed -e 's|$${OPS_ADMIN_PASSWORD}|'\"$$OPS_ADMIN_PASSWORD\"'|g' -e 's|$${KEYCLOAK_CLIENT_SECRET}|'\"$$KEYCLOAK_CLIENT_SECRET\"'|g' /tmp/realm-export.json.tpl > /opt/keycloak/data/import/realm-export.json && /opt/keycloak/bin/kc.sh import --dir /opt/keycloak/data/import --override true && exec /opt/keycloak/bin/kc.sh start-dev"
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
