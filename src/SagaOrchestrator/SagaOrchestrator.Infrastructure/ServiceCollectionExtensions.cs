@@ -16,6 +16,7 @@ public static class ServiceCollectionExtensions
 
         services.AddDbContext<SagaDbContext>(opt =>
             opt.UseNpgsql(connStr, npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 5)));
+        services.AddSingleton<ISagaConnectionFactory, SagaConnectionFactory>();
         services.AddHostedService<DatabaseMigratorService>();
 
         services.AddSingleton(new SagaOptions
