@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Platform Wallet — Sagas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 1200px; }
+        header { border-bottom: 1px solid #ddd; padding-bottom: 0.5rem; }
+        .controls { display: flex; gap: 0.5rem; margin-top: 1rem; align-items: center; flex-wrap: wrap; }
+        table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+        th, td { border: 1px solid #e3e3e3; padding: 0.3rem 0.5rem; text-align: left; font-size: 0.9rem; }
+        button { cursor: pointer; }
+        .banner { padding: 0.5rem; background: #fde68a; border: 1px solid #f59e0b; margin-bottom: 1rem; }
+        .empty  { color: #666; margin-top: 1rem; }
+        code    { font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Sagas</h1>
+    <p><a href="../">← Ops Console</a></p>
+</header>
+<div id="banner" class="banner" hidden></div>
+<div class="controls">
+    <label>State:
+        <select id="state-filter">
+            <option value="">All</option>
+            <option value="Submitted">Submitted</option>
+            <option value="Processing">Processing</option>
+            <option value="Held">Held</option>
+            <option value="Completed">Completed</option>
+            <option value="Failed">Failed</option>
+            <option value="VoidStranded">VoidStranded</option>
+        </select>
+    </label>
+    <button id="refresh">Refresh</button>
+    <button id="prev">← Prev</button>
+    <button id="next">Next →</button>
+    <span id="page-info"></span>
+</div>
+<div id="rows">Loading…</div>
+<script src="../auth.js" defer></script>
+<script src="sagas.js" defer></script>
+</body>
+</html>
