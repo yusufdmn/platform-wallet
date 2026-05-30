@@ -369,7 +369,60 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                     "Saga {CorrelationId}: void retry requested (attempt {Attempt})",
                     ctx.Saga.CorrelationId, ctx.Saga.VoidAttempts)));
 
+        ConfigureIdempotentIgnores();
+        ConfigureUnhandledEventLogging(logger);
+
         SetCompletedWhenFinalized();
+    }
+
+    // Silently drop idempotent re-deliveries of events that have already been processed
+    // for the current state. Without these, MassTransit raises NotAcceptedStateMachineException
+    // which loops through the retry pipeline before landing in the DLQ — wasted CPU for
+    // a duplicate that is, by definition, safe to discard.
+    private void ConfigureIdempotentIgnores()
+    {
+        DuringAny(
+            Ignore(TransactionSubmitted));
+
+        During(Processing,
+            Ignore(CaptureTransferRequested),
+            Ignore(VoidRequested));
+
+        During(Held,
+            Ignore(FundsHeld));
+
+        During(Completed,
+            Ignore(FundsMinted),
+            Ignore(FundsBurned),
+            Ignore(FundsHeld),
+            Ignore(TransferCaptured),
+            Ignore(HoldVoided),
+            Ignore(CaptureTransferRequested),
+            Ignore(VoidRequested));
+
+        During(Failed,
+            Ignore(MintFailed), Ignore(BurnFailed), Ignore(HoldFailed),
+            Ignore(CaptureFailed), Ignore(VoidFailed),
+            Ignore(MintFundsFaulted), Ignore(BurnFundsFaulted), Ignore(HoldFundsFaulted),
+            Ignore(CaptureTransferFaulted), Ignore(VoidHoldFaulted));
+
+        During(VoidStranded,
+            Ignore(HoldVoided));
+    }
+
+    // Anything not explicitly handled or Ignored is logged and dropped, so an
+    // unrecoverable state/event mismatch never enters the retry → DLQ loop.
+    private void ConfigureUnhandledEventLogging(ILogger<TransactionSagaStateMachine> logger)
+    {
+        OnUnhandledEvent(context =>
+        {
+            logger.LogError(
+                "Saga {CorrelationId} received unexpected event {Event} in state {State} — discarding",
+                context.Saga.CorrelationId,
+                context.Event.Name,
+                context.Saga.CurrentState);
+            return context.Ignore();
+        });
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
