@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Dapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PlatformWallet.WebhookDispatcher.Application.Services;
 using PlatformWallet.WebhookDispatcher.Infrastructure.Persistence;
 
@@ -63,24 +62,21 @@ public static class WebhookAdminEndpoints
     }
 
     private static async Task<IResult> RetryOneAsync(
-        long                    id,
-        WebhookDbContext        db,
-        IWebhookDeliveryService delivery,
-        CancellationToken       ct)
+        long                   id,
+        IFailedDeliveryRetrier retrier,
+        CancellationToken      ct)
     {
-        var row = await db.FailedDeliveries.FirstOrDefaultAsync(x => x.Id == id, ct);
-        if (row is null)
+        var outcome = await retrier.RetryAsync(id, ct);
+        if (outcome is null)
         {
             return Results.NotFound();
         }
 
-        await RetryAsync(row, db, delivery, ct);
-
         return Results.Ok(new
         {
-            id          = row.Id,
-            status      = row.Status.ToString(),
-            retry_count = row.RetryCount,
+            id          = outcome.Id,
+            status      = outcome.Status,
+            retry_count = outcome.RetryCount,
         });
     }
 
@@ -127,25 +123,16 @@ public static class WebhookAdminEndpoints
             }
 
             await using var scope = sp.CreateAsyncScope();
-            var db       = scope.ServiceProvider.GetRequiredService<WebhookDbContext>();
-            var delivery = scope.ServiceProvider.GetRequiredService<IWebhookDeliveryService>();
+            var retrier = scope.ServiceProvider.GetRequiredService<IFailedDeliveryRetrier>();
 
-            var id  = ids[i];
-            var row = await db.FailedDeliveries.FirstOrDefaultAsync(x => x.Id == id, ct);
-            if (row is null)
+            var outcome = await retrier.RetryAsync(ids[i], ct);
+            if (outcome is null || !outcome.Delivered)
             {
                 failed++;
-                continue;
-            }
-
-            await RetryAsync(row, db, delivery, ct);
-            if (row.Status == FailedDeliveryStatus.Delivered)
-            {
-                delivered++;
             }
             else
             {
-                failed++;
+                delivered++;
             }
         }
 
@@ -159,32 +146,6 @@ public static class WebhookAdminEndpoints
             durationMs = sw.ElapsedMilliseconds,
             intervalMs = interval,
         });
-    }
-
-    private static async Task RetryAsync(
-        FailedWebhookDelivery   row,
-        WebhookDbContext        db,
-        IWebhookDeliveryService delivery,
-        CancellationToken       ct)
-    {
-        row.MarkRetrying();
-        await db.SaveChangesAsync(ct);
-
-        try
-        {
-            await delivery.DeliverAsync(row.EventType, row.CorrelationId, ct);
-            row.MarkDelivered(DateTimeOffset.UtcNow);
-        }
-        catch (WebhookDeliveryException ex)
-        {
-            row.RecordRetryFailure(DateTimeOffset.UtcNow, ex.Message, ex.StatusCode, ex.ResponseBody);
-        }
-        catch (Exception ex)
-        {
-            row.RecordRetryFailure(DateTimeOffset.UtcNow, ex.Message);
-        }
-
-        await db.SaveChangesAsync(ct);
     }
 
     private static int ClampTake(int? take) =>

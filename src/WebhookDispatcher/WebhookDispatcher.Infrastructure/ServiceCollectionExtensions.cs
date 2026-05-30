@@ -50,6 +50,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IWebhookDeliveryService, WebhookDeliveryService>();
         services.AddScoped<IFailedDeliveryRepository, FailedDeliveryRepository>();
+        services.AddScoped<IFailedDeliveryRetrier,    FailedDeliveryRetrier>();
         services.AddSingleton<IWebhookConnectionFactory, WebhookConnectionFactory>();
 
         return services;
