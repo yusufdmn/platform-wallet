@@ -98,6 +98,7 @@ app.UseMiddleware<IdempotencyMiddleware>();
 app.UseMiddleware<CorrelationIdMiddleware>();
 
 app.MapHealthChecks("/healthz");
+app.MapConsoleConfigEndpoint();
 app.MapDlqAdminEndpoints();
 app.MapReverseProxy();
 
