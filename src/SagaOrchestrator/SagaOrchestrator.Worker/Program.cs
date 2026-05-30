@@ -17,6 +17,8 @@ var host = Host.CreateDefaultBuilder(args)
 
         services.AddMassTransit(x =>
         {
+            x.AddDelayedMessageScheduler();
+
             x.AddSagaStateMachine<TransactionSagaStateMachine, TransactionSagaState>()
                 .EntityFrameworkRepository(r =>
                 {
@@ -44,6 +46,8 @@ var host = Host.CreateDefaultBuilder(args)
                     h.Password(configuration["RABBITMQ_DEFAULT_PASSWORD"]!);
                 });
 
+                cfg.UseDelayedMessageScheduler();
+
                 cfg.UseMessageRetry(r =>
                 {
                     r.Intervals(
@@ -56,9 +60,10 @@ var host = Host.CreateDefaultBuilder(args)
                     r.Ignore<InvalidCastException>();
                 });
 
-                // UseScheduledRedelivery requires RabbitMQ delayed-message exchange plugin or
-                // a Quartz/Hangfire scheduler — not available in this deployment.
-                // UseMessageRetry above is sufficient for transient saga faults.
+                cfg.UseScheduledRedelivery(r => r.Intervals(
+                    TimeSpan.FromMinutes(1),
+                    TimeSpan.FromMinutes(5),
+                    TimeSpan.FromMinutes(30)));
 
                 cfg.UsePartitioner(8, p => p.CorrelationId
                     ?? p.MessageId

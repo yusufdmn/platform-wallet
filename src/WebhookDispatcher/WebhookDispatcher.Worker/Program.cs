@@ -20,6 +20,8 @@ var host = Host.CreateDefaultBuilder(args)
         {
             x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("webhook", false));
 
+            x.AddDelayedMessageScheduler();
+
             x.AddConsumer<TransactionMintedConsumer>();
             x.AddConsumer<TransactionBurnedConsumer>();
             x.AddConsumer<TransactionCapturedConsumer>();
@@ -43,6 +45,8 @@ var host = Host.CreateDefaultBuilder(args)
                     h.Username(configuration["RABBITMQ_DEFAULT_USER"]!);
                     h.Password(configuration["RABBITMQ_DEFAULT_PASSWORD"]!);
                 });
+
+                cfg.UseDelayedMessageScheduler();
 
                 cfg.UseMessageRetry(r =>
                 {
