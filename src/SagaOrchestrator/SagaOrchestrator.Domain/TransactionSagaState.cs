@@ -14,6 +14,7 @@ public sealed class TransactionSagaState : SagaStateMachineInstance
     public string? FailureReason  { get; set; }
     public bool IsCompensating    { get; set; }
     public int  VoidAttempts      { get; set; }
+    public Guid? HoldExpiryTokenId { get; set; }
     public DateTimeOffset CreatedAt  { get; set; }
     public DateTimeOffset UpdatedAt  { get; set; }
     public byte[] RowVersion        { get; set; } = [];

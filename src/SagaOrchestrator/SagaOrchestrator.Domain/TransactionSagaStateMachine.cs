@@ -41,12 +41,29 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
     public Event<Fault<CaptureTransfer>>    CaptureTransferFaulted   { get; private set; } = null!;
     public Event<Fault<VoidHold>>           VoidHoldFaulted          { get; private set; } = null!;
 
-    public TransactionSagaStateMachine(ILogger<TransactionSagaStateMachine> logger)
+    // ── Schedules ─────────────────────────────────────────────────────────────
+    public Schedule<TransactionSagaState, HoldExpired> HoldExpirySchedule { get; private set; } = null!;
+
+    public TransactionSagaStateMachine(
+        ILogger<TransactionSagaStateMachine> logger,
+        SagaOptions                          options)
     {
         InstanceState(x => x.CurrentState);
 
         ConfigureEvents();
+        ConfigureSchedules(options);
         ConfigureTransitions(logger);
+    }
+
+    private void ConfigureSchedules(SagaOptions options)
+    {
+        Schedule(() => HoldExpirySchedule,
+            instance => instance.HoldExpiryTokenId,
+            s =>
+            {
+                s.Delay    = TimeSpan.FromSeconds(options.HoldTtlSeconds);
+                s.Received = r => r.CorrelateById(ctx => ctx.Message.CorrelationId);
+            });
     }
 
     private void ConfigureEvents()
@@ -212,13 +229,14 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                     ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
                 .Finalize(),
 
-            // Hold success → publish TransactionHeld, wait for capture or void request
+            // Hold success → publish TransactionHeld, schedule TTL auto-void, wait for capture or void request
             When(FundsHeld)
                 .Then(ctx => Touch(ctx.Saga))
                 .Publish(ctx => new TransactionHeld(
                     ctx.Saga.CorrelationId,
                     ctx.Saga.DebitAccountId!.Value,
                     ctx.Saga.CreditAccountId))
+                .Schedule(HoldExpirySchedule, ctx => new HoldExpired(ctx.Saga.CorrelationId))
                 .TransitionTo(Held)
                 .Then(ctx => logger.LogInformation(
                     "Saga {CorrelationId}: funds held", ctx.Saga.CorrelationId)),
@@ -246,6 +264,7 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
         During(Held,
             // Capture requested
             When(CaptureTransferRequested)
+                .Unschedule(HoldExpirySchedule)
                 .Then(ctx => Touch(ctx.Saga))
                 .Publish(ctx => new CaptureTransfer(
                     ctx.Saga.CorrelationId,
@@ -257,7 +276,24 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
 
             // Void requested — compensate
             When(VoidRequested)
+                .Unschedule(HoldExpirySchedule)
                 .Then(ctx => Touch(ctx.Saga))
+                .Publish(ctx => new VoidHold(
+                    ctx.Saga.CorrelationId,
+                    ctx.Saga.DebitAccountId!.Value,
+                    ctx.Saga.Amount,
+                    ctx.Saga.Asset))
+                .TransitionTo(Processing),
+
+            // Hold TTL elapsed — auto-void
+            When(HoldExpirySchedule.Received)
+                .Then(ctx =>
+                {
+                    Touch(ctx.Saga);
+                    logger.LogInformation(
+                        "Saga {CorrelationId}: hold TTL expired, auto-voiding",
+                        ctx.Saga.CorrelationId);
+                })
                 .Publish(ctx => new VoidHold(
                     ctx.Saga.CorrelationId,
                     ctx.Saga.DebitAccountId!.Value,

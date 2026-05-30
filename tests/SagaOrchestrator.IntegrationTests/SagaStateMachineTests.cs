@@ -16,6 +16,7 @@ public class SagaStateMachineTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton(new SagaOptions());
 
         services.AddMassTransitTestHarness(x =>
         {
