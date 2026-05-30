@@ -180,13 +180,13 @@ public static class WebhookAdminEndpoints
     }
 
     private sealed record FailedRow(
-        long           Id,
-        string         EventType,
-        Guid           CorrelationId,
-        string         Reason,
-        int?           LastHttpStatusCode,
-        string         Status,
-        int            RetryCount,
-        DateTimeOffset FailedAt,
-        DateTimeOffset? RetriedAt);
+        long      Id,
+        string    EventType,
+        Guid      CorrelationId,
+        string    Reason,
+        int?      LastHttpStatusCode,
+        string    Status,
+        int       RetryCount,
+        DateTime  FailedAt,
+        DateTime? RetriedAt);
 }
