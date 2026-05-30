@@ -79,12 +79,12 @@
         "pkce.code.challenge.method": "S256"
       },
       "redirectUris": [
-        "http://127.0.0.1:5555/callback",
-        "http://localhost:5555/callback"
+        "http://localhost:14041/console/callback.html",
+        "http://localhost:8080/console/callback.html"
       ],
       "webOrigins": ["*"],
-      "defaultClientScopes": [],
-      "optionalClientScopes": ["ledger:admin"],
+      "defaultClientScopes": ["ledger:admin"],
+      "optionalClientScopes": [],
       "protocolMappers": [
         {
           "name": "platform-wallet-audience",
