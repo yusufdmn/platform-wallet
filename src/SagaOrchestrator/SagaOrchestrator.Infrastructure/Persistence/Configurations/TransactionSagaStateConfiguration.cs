@@ -45,6 +45,8 @@ public sealed class TransactionSagaStateConfiguration : IEntityTypeConfiguration
             .HasColumnName("void_attempts")
             .HasDefaultValue(0);
 
+        builder.Property(x => x.HoldExpiryTokenId).HasColumnName("hold_expiry_token_id");
+
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
