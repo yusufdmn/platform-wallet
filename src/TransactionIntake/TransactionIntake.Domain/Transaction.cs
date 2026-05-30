@@ -1,3 +1,5 @@
+using PlatformWallet.TransactionIntake.Domain.Exceptions;
+
 namespace PlatformWallet.TransactionIntake.Domain;
 
 public class Transaction
@@ -13,6 +15,24 @@ public class Transaction
     public string            IdempotencyKeyHash { get; private set; } = null!;
     public DateTimeOffset    CreatedAt          { get; private set; }
 
+    private static readonly IReadOnlyDictionary<TransactionStatus, IReadOnlySet<TransactionStatus>> AllowedTransitions =
+        new Dictionary<TransactionStatus, IReadOnlySet<TransactionStatus>>
+        {
+            [TransactionStatus.Pending]          = new HashSet<TransactionStatus> { TransactionStatus.Held,
+                                                                                    TransactionStatus.Captured,
+                                                                                    TransactionStatus.Failed },
+            [TransactionStatus.Held]             = new HashSet<TransactionStatus> { TransactionStatus.CaptureRequested,
+                                                                                    TransactionStatus.VoidRequested,
+                                                                                    TransactionStatus.Failed },
+            [TransactionStatus.CaptureRequested] = new HashSet<TransactionStatus> { TransactionStatus.Captured,
+                                                                                    TransactionStatus.Failed },
+            [TransactionStatus.VoidRequested]    = new HashSet<TransactionStatus> { TransactionStatus.Voided,
+                                                                                    TransactionStatus.Failed },
+            [TransactionStatus.Captured]         = new HashSet<TransactionStatus>(),
+            [TransactionStatus.Voided]           = new HashSet<TransactionStatus>(),
+            [TransactionStatus.Failed]           = new HashSet<TransactionStatus>(),
+        };
+
     private Transaction() { }
 
     public static Transaction CreateMint(
@@ -23,7 +43,7 @@ public class Transaction
         Guid    creditAccountId,
         string  idempotencyKeyHash)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        EnsurePositive(amount);
 
         return new Transaction
         {
@@ -47,7 +67,7 @@ public class Transaction
         Guid    debitAccountId,
         string  idempotencyKeyHash)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        EnsurePositive(amount);
 
         return new Transaction
         {
@@ -72,7 +92,7 @@ public class Transaction
         Guid    creditAccountId,
         string  idempotencyKeyHash)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
+        EnsurePositive(amount);
 
         return new Transaction
         {
@@ -89,5 +109,26 @@ public class Transaction
         };
     }
 
-    public void Transition(TransactionStatus newStatus) => Status = newStatus;
+    public void Transition(TransactionStatus newStatus)
+    {
+        if (Status == newStatus)
+        {
+            return;
+        }
+
+        if (!AllowedTransitions[Status].Contains(newStatus))
+        {
+            throw new InvalidTransitionException(Status, newStatus);
+        }
+
+        Status = newStatus;
+    }
+
+    private static void EnsurePositive(decimal amount)
+    {
+        if (amount <= 0)
+        {
+            throw new InvalidAmountException(amount);
+        }
+    }
 }
