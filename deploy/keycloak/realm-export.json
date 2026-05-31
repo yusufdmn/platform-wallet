@@ -79,8 +79,7 @@
         "pkce.code.challenge.method": "S256"
       },
       "redirectUris": [
-        "http://localhost:14041/console/callback.html",
-        "http://localhost:8080/console/callback.html"
+        "http://localhost:14044/console/callback.html"
       ],
       "webOrigins": ["*"],
       "defaultClientScopes": ["ledger:admin"],

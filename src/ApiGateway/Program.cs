@@ -85,6 +85,10 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+// Confine the admin plane (/console + /admin) to the internal listener. Runs first, ahead
+// of static files and auth, so the public listener 404s those paths before serving anything.
+app.UseMiddleware<AdminPlaneGuardMiddleware>();
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
