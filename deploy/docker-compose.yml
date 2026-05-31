@@ -80,6 +80,8 @@ services:
       RABBITMQ_PORT: ${RABBITMQ_PORT}
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASSWORD: ${RABBITMQ_DEFAULT_PASSWORD}
+      # Zero-trust: the /admin/sagas endpoints re-validate the JWT against Keycloak.
+      KEYCLOAK_AUTHORITY: ${KEYCLOAK_AUTHORITY}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_SERVICE_NAME: saga-orchestrator
 
@@ -89,6 +91,11 @@ services:
       dockerfile: src/BalanceQuery/Dockerfile
     environment:
       ASPNETCORE_URLS: http://+:8080
+      # BalanceQuery consumes Transaction* events over RabbitMQ for cache invalidation.
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASSWORD: ${RABBITMQ_DEFAULT_PASSWORD}
       # BalanceQuery reads REDIS_CONNECTION (StackExchange.Redis format).
       # In this stack the Redis container is on the LAN server — use the .env value.
       REDIS_CONNECTION: ${REDIS_CONNECTION}
@@ -121,6 +128,8 @@ services:
       RABBITMQ_PORT: ${RABBITMQ_PORT}
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASSWORD: ${RABBITMQ_DEFAULT_PASSWORD}
+      # Zero-trust: the /admin/webhooks endpoints re-validate the JWT against Keycloak.
+      KEYCLOAK_AUTHORITY: ${KEYCLOAK_AUTHORITY}
       # Webhook delivery target: override .env's localhost value with the Docker service name.
       WEBHOOK_TARGET_URL: http://webhook-sink:8080/webhook
       WEBHOOK_HMAC_SECRET: ${WEBHOOK_HMAC_SECRET}
@@ -153,6 +162,11 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:8080;http://+:8081
       KEYCLOAK_AUTHORITY: ${KEYCLOAK_AUTHORITY}
+      # RabbitMQ Management API — required by the DLQ admin client (gateway throws without it).
+      RABBITMQ_MGMT_URL: ${RABBITMQ_MGMT_URL}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASSWORD: ${RABBITMQ_DEFAULT_PASSWORD}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST}
       # ApiGateway reads REDIS_CONNECTION (StackExchange.Redis format).
       REDIS_CONNECTION: ${REDIS_CONNECTION}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
