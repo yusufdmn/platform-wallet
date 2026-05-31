@@ -80,6 +80,8 @@ services:
       RABBITMQ_PORT: ${RABBITMQ_PORT}
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASSWORD: ${RABBITMQ_DEFAULT_PASSWORD}
+      # Zero-trust: the /admin/sagas endpoints re-validate the JWT against Keycloak.
+      KEYCLOAK_AUTHORITY: ${KEYCLOAK_AUTHORITY}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_SERVICE_NAME: saga-orchestrator
 
@@ -126,6 +128,8 @@ services:
       RABBITMQ_PORT: ${RABBITMQ_PORT}
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASSWORD: ${RABBITMQ_DEFAULT_PASSWORD}
+      # Zero-trust: the /admin/webhooks endpoints re-validate the JWT against Keycloak.
+      KEYCLOAK_AUTHORITY: ${KEYCLOAK_AUTHORITY}
       # Webhook delivery target: override .env's localhost value with the Docker service name.
       WEBHOOK_TARGET_URL: http://webhook-sink:8080/webhook
       WEBHOOK_HMAC_SECRET: ${WEBHOOK_HMAC_SECRET}
