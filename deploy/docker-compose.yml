@@ -148,9 +148,10 @@ services:
       context: ..
       dockerfile: src/ApiGateway/Dockerfile
     ports:
-      - "14041:8080"
+      - "14041:8080"             # public data plane
+      - "127.0.0.1:14044:8081"   # admin/console — host-loopback only (reach via SSH tunnel/VPN)
     environment:
-      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_URLS: http://+:8080;http://+:8081
       KEYCLOAK_AUTHORITY: ${KEYCLOAK_AUTHORITY}
       # ApiGateway reads REDIS_CONNECTION (StackExchange.Redis format).
       REDIS_CONNECTION: ${REDIS_CONNECTION}
