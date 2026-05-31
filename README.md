@@ -107,7 +107,7 @@ by `tests/ArchitectureTests` (NetArchTest).
 | Validation        | FluentValidation                                                    |
 | Mediator          | MediatR (Application layer only)                                     |
 | Observability     | OpenTelemetry to OTel Collector to Jaeger + Seq + Prometheus + Grafana |
-| Logging           | Serilog to Seq + OTLP                                                |
+| Logging           | Serilog to OTLP to OTel Collector to Seq                            |
 | Containerization  | Docker Compose (single-host self-host, no Kubernetes)               |
 | Config            | `.env` (via `DotNetEnv`), `appsettings.json`, env vars              |
 | Testing           | xUnit, FluentAssertions, NSubstitute, Testcontainers, Respawn, NetArchTest, FsCheck |
