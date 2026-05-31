@@ -207,10 +207,22 @@ curl -X POST http://localhost:14041/mint \
 
 ### Ops Console
 
-A static SPA served by the gateway at `http://localhost:14041/console/`. Login is
-OAuth 2.0 Authorization Code + PKCE against the `ops-console` Keycloak client
-(`ledger:admin`). Pages: Overview, Sagas inspector, DLQ browser, and Failed
-Webhooks (list, retry, throttled replay-all).
+A static SPA served by the gateway. Login is OAuth 2.0 Authorization Code + PKCE
+against the `ops-console` Keycloak client (`ledger:admin`). Pages: Overview, Sagas
+inspector, DLQ browser, and Failed Webhooks (list, retry, throttled replay-all).
+
+The console and the `/admin` API are **not** served from the public edge. The gateway
+runs a second, internal-only Kestrel listener for the admin plane; requests for
+`/console` or `/admin` on the public port get a flat `404`. The internal listener binds
+to host-loopback (`127.0.0.1:14044` in the compose deploy), so it is unreachable from
+the network — operators reach it over an SSH tunnel or a host-terminating VPN:
+
+```bash
+ssh -L 14044:localhost:14044 <infra-host>
+# then browse http://localhost:14044/console/
+```
+
+In local `dotnet run`, the internal listener is `http://localhost:14044` directly.
 
 Infra UIs (no app auth):
 
