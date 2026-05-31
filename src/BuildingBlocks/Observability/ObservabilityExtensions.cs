@@ -5,11 +5,18 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
+using Serilog.Sinks.OpenTelemetry;
 
 namespace PlatformWallet.Observability;
 
 public static class ObservabilityExtensions
 {
+    private const string OtlpEndpointKey = "OTEL_EXPORTER_OTLP_ENDPOINT";
+    private const string DefaultOtlpEndpoint = "http://otel-collector:4317";
+    private const string EnvironmentKey = "ASPNETCORE_ENVIRONMENT";
+    private const string DefaultEnvironment = "development";
+    private const string ServiceVersion = "0.1.0";
+
     public static IServiceCollection AddPlatformWalletObservability(
         this IServiceCollection services,
         IConfiguration configuration,
@@ -19,16 +26,14 @@ public static class ObservabilityExtensions
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentException.ThrowIfNullOrWhiteSpace(serviceName);
 
-        var otlpEndpoint = configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]
-                           ?? "http://otel-collector:4317";
+        var otlpEndpoint = ResolveOtlpEndpoint(configuration);
 
         services
             .AddOpenTelemetry()
             .ConfigureResource(rb => rb
-                .AddService(serviceName: serviceName, serviceVersion: "0.1.0")
+                .AddService(serviceName: serviceName, serviceVersion: ServiceVersion)
                 .AddAttributes([
-                    new("deployment.environment",
-                        configuration["ASPNETCORE_ENVIRONMENT"] ?? "development")
+                    new("deployment.environment", ResolveEnvironment(configuration))
                 ]))
             .WithTracing(t => t
                 .AddAspNetCoreInstrumentation()
@@ -55,7 +60,7 @@ public static class ObservabilityExtensions
 
         return host.UseSerilog((ctx, _, cfg) =>
         {
-            var seqUrl = ctx.Configuration["SEQ_URL"] ?? "http://seq:5341";
+            var otlpEndpoint = ResolveOtlpEndpoint(ctx.Configuration);
 
             cfg
                 .ReadFrom.Configuration(ctx.Configuration)
@@ -64,7 +69,25 @@ public static class ObservabilityExtensions
                 .Enrich.WithProperty("ServiceName", serviceName)
                 .WriteTo.Console(outputTemplate:
                     "[{Timestamp:HH:mm:ss} {Level:u3}] {ServiceName} | {Message:lj}{NewLine}{Exception}")
-                .WriteTo.Seq(seqUrl);
+                // Logs flow over OTLP to the OTel Collector, which fans them out
+                // to Seq (and any other log backend). Services never talk to Seq directly.
+                .WriteTo.OpenTelemetry(o =>
+                {
+                    o.Endpoint = otlpEndpoint;
+                    o.Protocol = OtlpProtocol.Grpc;
+                    o.ResourceAttributes = new Dictionary<string, object>
+                    {
+                        ["service.name"] = serviceName,
+                        ["service.version"] = ServiceVersion,
+                        ["deployment.environment"] = ResolveEnvironment(ctx.Configuration)
+                    };
+                });
         });
     }
+
+    private static string ResolveOtlpEndpoint(IConfiguration configuration) =>
+        configuration[OtlpEndpointKey] ?? DefaultOtlpEndpoint;
+
+    private static string ResolveEnvironment(IConfiguration configuration) =>
+        configuration[EnvironmentKey] ?? DefaultEnvironment;
 }
