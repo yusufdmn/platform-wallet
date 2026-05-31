@@ -158,6 +158,11 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:8080;http://+:8081
       KEYCLOAK_AUTHORITY: ${KEYCLOAK_AUTHORITY}
+      # RabbitMQ Management API — required by the DLQ admin client (gateway throws without it).
+      RABBITMQ_MGMT_URL: ${RABBITMQ_MGMT_URL}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASSWORD: ${RABBITMQ_DEFAULT_PASSWORD}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST}
       # ApiGateway reads REDIS_CONNECTION (StackExchange.Redis format).
       REDIS_CONNECTION: ${REDIS_CONNECTION}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
