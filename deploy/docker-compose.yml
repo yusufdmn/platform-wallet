@@ -89,6 +89,11 @@ services:
       dockerfile: src/BalanceQuery/Dockerfile
     environment:
       ASPNETCORE_URLS: http://+:8080
+      # BalanceQuery consumes Transaction* events over RabbitMQ for cache invalidation.
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASSWORD: ${RABBITMQ_DEFAULT_PASSWORD}
       # BalanceQuery reads REDIS_CONNECTION (StackExchange.Redis format).
       # In this stack the Redis container is on the LAN server — use the .env value.
       REDIS_CONNECTION: ${REDIS_CONNECTION}
