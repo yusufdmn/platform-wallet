@@ -45,7 +45,11 @@
 
 <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <div class="border-b border-slate-100 px-5 py-4"><h3 class="font-semibold">Ledger history</h3></div>
-    @if (Model.History.Items.Count == 0)
+    @if (!Model.HistoryAvailable)
+    {
+        <p class="px-5 py-8 text-center text-sm text-amber-600">History is temporarily unavailable.</p>
+    }
+    else if (Model.History.Items.Count == 0)
     {
         <p class="px-5 py-8 text-center text-sm text-slate-500">No postings yet.</p>
     }

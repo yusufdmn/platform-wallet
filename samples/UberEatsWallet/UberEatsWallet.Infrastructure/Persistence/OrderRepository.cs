@@ -13,17 +13,18 @@ internal sealed class OrderRepository(AppDbContext db) : IOrderRepository
         db.Orders.FirstOrDefaultAsync(
             o => o.OrderTransactionId == correlationId || o.RefundTransactionId == correlationId, ct);
 
-    public async Task<IReadOnlyList<Order>> GetForCustomerAsync(Guid customerId, CancellationToken ct) =>
-        await db.Orders
-            .Where(o => o.CustomerId == customerId)
-            .OrderByDescending(o => o.CreatedAt)
-            .ToListAsync(ct);
+    // SQLite cannot ORDER BY a DateTimeOffset, so we sort newest-first in memory after the query.
+    public async Task<IReadOnlyList<Order>> GetForCustomerAsync(Guid customerId, CancellationToken ct)
+    {
+        var orders = await db.Orders.Where(o => o.CustomerId == customerId).ToListAsync(ct);
+        return orders.OrderByDescending(o => o.CreatedAt).ToList();
+    }
 
-    public async Task<IReadOnlyList<Order>> GetForRestaurantAsync(Guid restaurantId, CancellationToken ct) =>
-        await db.Orders
-            .Where(o => o.RestaurantId == restaurantId)
-            .OrderByDescending(o => o.CreatedAt)
-            .ToListAsync(ct);
+    public async Task<IReadOnlyList<Order>> GetForRestaurantAsync(Guid restaurantId, CancellationToken ct)
+    {
+        var orders = await db.Orders.Where(o => o.RestaurantId == restaurantId).ToListAsync(ct);
+        return orders.OrderByDescending(o => o.CreatedAt).ToList();
+    }
 
     public void Add(Order order) => db.Orders.Add(order);
 }

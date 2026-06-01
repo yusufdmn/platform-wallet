@@ -1,6 +1,8 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
+using UberEatsWallet.Application.Abstractions;
 using UberEatsWallet.Application.Services;
+using UberEatsWallet.Infrastructure.Wallet;
 using UberEatsWallet.Web.Identity;
 using UberEatsWallet.Web.Models;
 
@@ -20,8 +22,22 @@ public sealed class WalletController(ICurrentActorAccessor actors, WalletService
         }
 
         var balance = await wallet.GetBalanceAsync(actor.WalletAccountId, ct);
-        var history = await wallet.GetHistoryAsync(actor.WalletAccountId, 1, HistoryPageSize, ct);
-        return View(new WalletPageViewModel(actor, balance, history));
+        var (history, historyAvailable) = await TryGetHistoryAsync(actor.WalletAccountId, ct);
+        return View(new WalletPageViewModel(actor, balance, history, historyAvailable));
+    }
+
+    // History is best-effort: if the ledger read fails, still render the balance and actions.
+    private async Task<(WalletHistory History, bool Available)> TryGetHistoryAsync(
+        Guid accountId, CancellationToken ct)
+    {
+        try
+        {
+            return (await wallet.GetHistoryAsync(accountId, 1, HistoryPageSize, ct), true);
+        }
+        catch (Exception ex) when (ex is WalletGatewayException or HttpRequestException or TaskCanceledException)
+        {
+            return (new WalletHistory(1, HistoryPageSize, 0, []), false);
+        }
     }
 
     [HttpPost]

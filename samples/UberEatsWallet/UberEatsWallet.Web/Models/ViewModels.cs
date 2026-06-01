@@ -6,7 +6,11 @@ namespace UberEatsWallet.Web.Models;
 
 public sealed record HomeViewModel(IReadOnlyList<Customer> Customers, IReadOnlyList<Restaurant> Restaurants);
 
-public sealed record WalletPageViewModel(CurrentActor Actor, WalletBalance? Balance, WalletHistory History);
+public sealed record WalletPageViewModel(
+    CurrentActor Actor,
+    WalletBalance? Balance,
+    WalletHistory History,
+    bool HistoryAvailable);
 
 public sealed record MenuPageViewModel(Restaurant Restaurant, IReadOnlyList<MenuItem> Items);
 
