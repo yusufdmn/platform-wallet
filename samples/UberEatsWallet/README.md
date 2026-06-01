@@ -33,14 +33,17 @@ See [CLAUDE.md](./CLAUDE.md) for the layering rules, the integration contract, a
 
 ## Running it
 
-1. Bring up the wallet: infrastructure (`/run-infra`) and the six services (`/run-services`). The gateway
-   listens on `http://localhost:14041`.
-2. Point the wallet's webhook dispatcher at this app: in the **repo-root** `.env`, set
-   `WEBHOOK_TARGET_URL=http://localhost:5080/webhooks/wallet` and restart `webhook-dispatcher`.
-3. Configure this app: `cp samples/UberEatsWallet/.env.example samples/UberEatsWallet/.env` and fill it in
-   (the `WEBHOOK_HMAC_SECRET` **must match** the wallet's).
-4. Run it: `dotnet run --project samples/UberEatsWallet/UberEatsWallet.Web`, then open
-   `http://localhost:5080`. The seeder creates demo customers, restaurants, and menus and mints opening balances.
+1. Make sure the wallet is running and reachable — e.g. the containerized stack on a LAN server, with the
+   gateway on `http://<server>:14041` and Keycloak on `http://<server>:8088`.
+2. Configure this app: `cp samples/UberEatsWallet/.env.example samples/UberEatsWallet/.env` and fill it in —
+   point `WALLET_GATEWAY_URL` / `WALLET_TOKEN_URL` at the wallet, and set `WEBHOOK_HMAC_SECRET` to **match**
+   the wallet's.
+3. Run it: `dotnet run --project samples/UberEatsWallet/UberEatsWallet.Web`, then open `http://localhost:5080`.
+   The seeder creates demo customers, restaurants, and menus and mints opening balances.
+4. (Optional — for live status) Deliver webhooks to this app: point the wallet's `webhook-dispatcher` at this
+   app's reachable URL — e.g. `http://<this-machine-LAN-IP>:5080/webhooks/wallet` — and restart it, allowing
+   inbound port 5080. Without this, accept/reject/refund still update the UI; only the 5-minute auto-expiry and
+   hold-failure reconciliation (which rely on the webhook) won't fire.
 
 ## Configuration
 

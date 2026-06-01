@@ -69,7 +69,7 @@ internal sealed class DemoDataSeeder(
             {
                 await gateway.MintAsync(accountId, opening, $"{SeedMintKeyPrefix}{accountId}", ct);
             }
-            catch (Exception ex) when (ex is WalletGatewayException or HttpRequestException)
+            catch (Exception ex) when (ex is WalletGatewayException or HttpRequestException or TaskCanceledException)
             {
                 logger.LogWarning(
                     ex, "Opening mint for {AccountId} failed — is the wallet running? Skipping.", accountId);
