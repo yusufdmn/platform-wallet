@@ -1,0 +1,24 @@
+@model IReadOnlyList<Restaurant>
+@{
+    ViewData["Title"] = "Restaurants";
+}
+
+<h1 class="text-2xl font-bold">Restaurants</h1>
+<p class="mt-1 text-slate-500">Pick a place to order from.</p>
+
+<div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    @foreach (var restaurant in Model)
+    {
+        <a asp-controller="Restaurants" asp-action="Menu" asp-route-id="@restaurant.Id"
+           class="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-emerald-300 hover:shadow-md">
+            <div class="flex items-center gap-3">
+                <span class="grid h-12 w-12 place-items-center rounded-xl bg-orange-100 text-2xl">🍽️</span>
+                <div>
+                    <h3 class="font-semibold group-hover:text-emerald-700">@restaurant.Name</h3>
+                    <p class="text-xs text-slate-500">@restaurant.Cuisine</p>
+                </div>
+            </div>
+            <p class="mt-4 text-sm font-medium text-emerald-600">View menu →</p>
+        </a>
+    }
+</div>

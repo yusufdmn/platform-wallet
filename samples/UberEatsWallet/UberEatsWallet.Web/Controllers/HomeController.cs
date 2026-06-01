@@ -1,31 +1,64 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using UberEatsWallet.Application.Abstractions;
+using UberEatsWallet.Web.Identity;
 using UberEatsWallet.Web.Models;
 
 namespace UberEatsWallet.Web.Controllers;
 
-public class HomeController : Controller
+/// <summary>The "act as" login selector and session sign-out.</summary>
+public sealed class HomeController(ICurrentActorAccessor actors, ICatalogRepository catalog) : PageController(actors)
 {
-    private readonly ILogger<HomeController> _logger;
-
-    public HomeController(ILogger<HomeController> logger)
+    public async Task<IActionResult> Index(CancellationToken ct)
     {
-        _logger = logger;
+        if (Actor is { } actor)
+        {
+            return RedirectHome(actor);
+        }
+
+        var customers = await catalog.GetCustomersAsync(ct);
+        var restaurants = await catalog.GetRestaurantsAsync(ct);
+        return View(new HomeViewModel(customers, restaurants));
     }
 
-    public IActionResult Index()
+    [HttpPost]
+    public async Task<IActionResult> SignInAsCustomer(Guid id, CancellationToken ct)
     {
-        return View();
+        var customer = await catalog.GetCustomerAsync(id, ct);
+        if (customer is null)
+        {
+            return RedirectToAction(nameof(Index));
+        }
+
+        Actors.SignIn(new CurrentActor(ActorType.Customer, customer.Id, customer.Name, customer.WalletAccountId));
+        return RedirectToAction("Index", "Restaurants");
     }
 
-    public IActionResult Privacy()
+    [HttpPost]
+    public async Task<IActionResult> SignInAsRestaurant(Guid id, CancellationToken ct)
     {
-        return View();
+        var restaurant = await catalog.GetRestaurantAsync(id, ct);
+        if (restaurant is null)
+        {
+            return RedirectToAction(nameof(Index));
+        }
+
+        Actors.SignIn(new CurrentActor(ActorType.Restaurant, restaurant.Id, restaurant.Name, restaurant.WalletAccountId));
+        return RedirectToAction("Index", "RestaurantDashboard");
     }
 
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
+    [HttpPost]
+    public IActionResult Logout()
     {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        Actors.SignOut();
+        return RedirectToAction(nameof(Index));
     }
+
+    public IActionResult Error() =>
+        View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+
+    private RedirectToActionResult RedirectHome(CurrentActor actor) =>
+        actor.IsCustomer
+            ? RedirectToAction("Index", "Restaurants")
+            : RedirectToAction("Index", "RestaurantDashboard");
 }

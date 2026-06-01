@@ -1,0 +1,13 @@
+@model OrdersPageViewModel
+@{
+    ViewData["Title"] = "My Orders";
+}
+
+<div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">My Orders</h1>
+    <span class="text-xs text-slate-400">Live · updates automatically</span>
+</div>
+
+<div class="mt-6" hx-get="@Url.Action("List", "Orders")" hx-trigger="every 3s" hx-swap="innerHTML">
+    <partial name="_OrderList" model="Model" />
+</div>
