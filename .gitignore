@@ -45,10 +45,16 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # Env / secrets (NEVER commit)
-# Single .env lives at the repo root; no per-folder env files in this repo.
+# Single .env at the repo root for the wallet services.
+# Exception: samples/ apps carry their own .env (still ignored by the patterns below).
 .env
 .env.*
 !.env.example
+
+# SQLite databases (used by samples/UberEatsWallet)
+*.db
+*.db-shm
+*.db-wal
 
 # Per-user Claude Code state (not shared across contributors)
 .claude/settings.local.json

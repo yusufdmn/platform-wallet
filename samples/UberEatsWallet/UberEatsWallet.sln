@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UberEatsWallet.Domain", "UberEatsWallet.Domain\UberEatsWallet.Domain.csproj", "{56C12F1F-A4A6-4CB6-8823-63583C76A80C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UberEatsWallet.Application", "UberEatsWallet.Application\UberEatsWallet.Application.csproj", "{00367BB0-230E-4552-83B0-3051D3D694A3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UberEatsWallet.Infrastructure", "UberEatsWallet.Infrastructure\UberEatsWallet.Infrastructure.csproj", "{B93F3830-9F98-4952-93A2-D0E10AD91056}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UberEatsWallet.Web", "UberEatsWallet.Web\UberEatsWallet.Web.csproj", "{6DF737E7-5E19-4215-8A30-B161C3BAF8D9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{56C12F1F-A4A6-4CB6-8823-63583C76A80C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56C12F1F-A4A6-4CB6-8823-63583C76A80C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56C12F1F-A4A6-4CB6-8823-63583C76A80C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56C12F1F-A4A6-4CB6-8823-63583C76A80C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00367BB0-230E-4552-83B0-3051D3D694A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00367BB0-230E-4552-83B0-3051D3D694A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00367BB0-230E-4552-83B0-3051D3D694A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00367BB0-230E-4552-83B0-3051D3D694A3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B93F3830-9F98-4952-93A2-D0E10AD91056}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B93F3830-9F98-4952-93A2-D0E10AD91056}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B93F3830-9F98-4952-93A2-D0E10AD91056}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B93F3830-9F98-4952-93A2-D0E10AD91056}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6DF737E7-5E19-4215-8A30-B161C3BAF8D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6DF737E7-5E19-4215-8A30-B161C3BAF8D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6DF737E7-5E19-4215-8A30-B161C3BAF8D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6DF737E7-5E19-4215-8A30-B161C3BAF8D9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

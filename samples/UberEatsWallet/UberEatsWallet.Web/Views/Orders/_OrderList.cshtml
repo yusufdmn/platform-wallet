@@ -1,0 +1,34 @@
+@model OrdersPageViewModel
+@if (Model.Orders.Count == 0)
+{
+    <div class="rounded-2xl border border-dashed border-slate-300 bg-white/50 p-10 text-center text-slate-500">
+        No orders yet. <a asp-controller="Restaurants" asp-action="Index" class="font-medium text-emerald-600">Browse restaurants →</a>
+    </div>
+}
+else
+{
+    <div class="space-y-3">
+        @foreach (var row in Model.Orders)
+        {
+            var order = row.Order;
+            <div class="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div>
+                    <h3 class="font-semibold">@order.Quantity × @order.ItemName</h3>
+                    <p class="text-sm text-slate-500">@row.CounterpartyName · @order.Amount.ToString("0.00") USD</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset @OrderStatusStyle.BadgeClasses(order.Status)">
+                        @OrderStatusStyle.Label(order.Status)
+                    </span>
+                    @if (order.Status == OrderStatus.Pending)
+                    {
+                        <form asp-controller="Orders" asp-action="Cancel" method="post">
+                            <input type="hidden" name="id" value="@order.Id" />
+                            <button class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100">Cancel</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
