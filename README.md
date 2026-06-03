@@ -1,31 +1,33 @@
 # Platform Wallet
 
-A self-hostable, open-source **.NET 8 double-entry ledger / Platform Wallet**.
-Platforms (gaming, e-commerce, SaaS, loyalty) deploy it into their own
-environment to manage internal balances, store credit, or points with strict
-double-entry accounting, idempotency, audit trails, and signed event delivery.
-The system is **single-tenant**: the host owns the deployment, the database, and
-the data. The domain is intentionally thin so the architecture stays in focus.
+**What it is.** A self-hostable, single-tenant **.NET 8 double-entry ledger**
+a platform drops into its own environment to track internal money — user
+balances, store credit, in-app points, or held funds during checkout. The
+domain is deliberately thin so the architecture stays in focus.
 
-Value verbs: **Mint**, **Burn**, **Hold**, **Capture**, **Void**, **Balance**,
-**History**. Every write produces two postings whose signed amounts sum to zero,
-and a runtime sweep (`GET /admin/invariants/zero-sum`) verifies that invariant
-across the whole ledger.
+**What it solves and how.** Storing a balance as one column on a user row
+breaks the moment you need to answer "where did this money come from?",
+retry a failed write safely, or prove the books balance. Platform Wallet
+replaces that with an append-only ledger (every write is two postings summing
+to zero), a saga that drives multi-step flows and compensates on failure, two
+layers of idempotency so retries are safe, and HMAC-signed webhooks for
+reliable downstream delivery.
+
+**Who it's for.** Platforms — gaming, e-commerce, SaaS, loyalty — that want
+an internal balance system they own end-to-end, and engineers looking for a
+reference wiring of these patterns in one place.
 
 ## Table of Contents
 
 - [Architecture](#architecture)
-  - [Summary](#summary)
-  - [High-Level Architecture](#high-level-architecture)
-  - [Key Patterns](#key-patterns)
-  - [Microservices](#microservices)
 - [Tech Stack](#tech-stack)
 - [API Endpoints](#api-endpoints)
+- [Ops Console](#ops-console)
+- [Repository Layout](#repository-layout)
+- [Conventions](#conventions)
+- [Tests](#tests)
+- [Sample Application](#sample-application)
 - [Getting Started](#getting-started)
-  - [Ops Console](#ops-console)
-  - [Repository Layout](#repository-layout)
-  - [Tests](#tests)
-  - [Conventions](#conventions)
 
 ## Architecture
 
@@ -147,82 +149,37 @@ calls carry an `api-version: 1` header and a Bearer JWT; writes also require an
 | POST   | `/admin/dlq/{queue}/replay-one`           | Replay one dead-lettered message  |
 | POST   | `/admin/dlq/{queue}/replay-all`           | Replay a queue (requires confirm) |
 
-## Getting Started
+## Ops Console
 
-### Prerequisites
+The Ops Console (Sagas inspector, DLQ browser, Failed Webhooks list/retry/replay-all)
+and the entire `/admin/**` API are **not** exposed on the public gateway port.
 
-- .NET 8 SDK
-- Docker with Docker Compose v2
-- A reachable host running the infra (a LAN box or `localhost`)
-- A `.env` filled in from `.env.example`
+The gateway runs two Kestrel listeners:
 
-### 1. Bring up the infrastructure
+| Plane | Port (dev) | Reachable from | Routes |
+|---|---|---|---|
+| Public data plane | `14041` | Anywhere | `/mint`, `/burn`, `/transfer/**`, `/accounts/**`, `/transactions/**` |
+| Internal admin plane | `14044` | **Only the host the gateway runs on, or via an SSH/VPN tunnel into that host** | `/console/**`, `/admin/**` |
 
-```bash
-docker compose -f deploy/docker-compose.infra.yml --env-file .env up -d
-```
+The admin listener is intended to be bound to a private interface (loopback or
+a private LAN NIC) and **never published to the internet**. To use the Ops
+Console from your workstation, either:
 
-This starts Postgres 16, RabbitMQ 3.13, Redis 7, Keycloak 25 (with
-`realm-export.json` preloaded), the OpenTelemetry Collector, Jaeger, Seq,
-Prometheus, and Grafana.
+- run a browser on the gateway host itself, or
+- open an SSH tunnel, e.g.
+  `ssh -L 14044:localhost:14044 user@gateway-host`, then browse
+  `http://localhost:14044/console/`, or
+- connect through your VPN / bastion so your machine lives inside the same
+  private network as the gateway.
 
-### 2. Run the services
+An `AdminPlaneGuardMiddleware` enforces this at the application layer: any
+`/console` or `/admin` request that arrives on the public port is rejected
+with `404`, so the admin surface cannot leak even if a route or proxy is
+misconfigured. In production, set `OpsConsole:InternalListenerPort` (default
+`8081`) and bind that listener to a private interface only.
 
-Locally, with `.env` pointing at the infra host:
-
-```bash
-dotnet run --project src/Ledger/Ledger.Api
-dotnet run --project src/TransactionIntake/TransactionIntake.Api
-dotnet run --project src/SagaOrchestrator/SagaOrchestrator.Worker
-dotnet run --project src/BalanceQuery/BalanceQuery.Api
-dotnet run --project src/WebhookDispatcher/WebhookDispatcher.Worker
-dotnet run --project src/ApiGateway
-```
-
-Or containerized:
-
-```bash
-docker compose -f deploy/docker-compose.yml --env-file .env up --build -d
-```
-
-### 3. Get a token and call the API
-
-```bash
-TOKEN=$(curl -s -X POST \
-  "http://<infra-host>:8088/realms/platform-wallet/protocol/openid-connect/token" \
-  -d "grant_type=client_credentials" \
-  -d "client_id=ledger-service-client" \
-  -d "client_secret=ledger-service-secret" \
-  -d "scope=ledger:read ledger:write" | jq -r .access_token)
-
-curl -X POST http://localhost:14041/mint \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "api-version: 1" \
-  -H "Idempotency-Key: $(uuidgen)" \
-  -H "Content-Type: application/json" \
-  -d '{ "creditAccountId": "11111111-1111-1111-1111-111111111111",
-        "amount": 1000,
-        "asset": "USD" }'
-```
-
-### Ops Console
-
-A static SPA served by the gateway. Login is OAuth 2.0 Authorization Code + PKCE
-against the `ops-console` Keycloak client (`ledger:admin`). Pages: Overview, Sagas
-inspector, DLQ browser, and Failed Webhooks (list, retry, throttled replay-all).
-
-The console and the `/admin` API are **not** served from the public edge. The gateway
-runs a second, internal-only Kestrel listener for the admin plane; requests for
-`/console` or `/admin` on the public port get a flat `404`. The internal listener binds
-to host-loopback (`127.0.0.1:14044` in the compose deploy), so it is unreachable from
-the network — operators reach it over an SSH tunnel or a host-terminating VPN:
-
-```bash
-ssh -L 14044:localhost:14044 <infra-host>
-# then browse http://localhost:14044/console/
-```
-
-In local `dotnet run`, the internal listener is `http://localhost:14044` directly.
+Login is OAuth 2.0 Authorization Code + PKCE against the `ops-console` Keycloak
+client with scope `ledger:admin`.
 
 Infra UIs (no app auth):
 
@@ -234,7 +191,7 @@ Infra UIs (no app auth):
 | RabbitMQ Mgmt  | http://`<infra-host>`:15672  |
 | Keycloak Admin | http://`<infra-host>`:8088   |
 
-### Repository Layout
+## Repository Layout
 
 ```
 PlatformWallet/
@@ -261,7 +218,7 @@ PlatformWallet/
 └── PlatformWallet.sln
 ```
 
-### Tests
+## Tests
 
 ```bash
 # Unit + Architecture + per-service Integration (Testcontainers)
@@ -275,7 +232,7 @@ The Ledger integration suite runs the **zero-sum invariant sweep** in fixture
 teardown: if any `(tx_id, phase)` pair in `postings` sums to non-zero, the suite
 fails. This is the single correctness gate for the system.
 
-### Conventions
+## Conventions
 
 Enforced repo-wide by the architecture tests and review subagents:
 
@@ -291,4 +248,99 @@ Enforced repo-wide by the architecture tests and review subagents:
 - One service owns one database.
 - Migrations run via `IHostedService` in Infrastructure; Api never references EF.
 - No manual correlation-ID plumbing outside the gateway middleware.
+
+## Sample Application
+
+A reference integration lives under `samples/UberEatsWallet/` — a small **ASP.NET
+Core MVC** app (Clean Architecture: `Domain` / `Application` / `Infrastructure`
+/ `Web`) that uses Platform Wallet as its money backend (mint promos, hold on
+checkout, capture on delivery, void on cancel). Use it as a worked example of
+how a host application talks to the ledger. See `samples/UberEatsWallet/README.md`
+for run instructions.
+
+## Getting Started
+
+This walkthrough brings the whole stack up with Docker Compose only — no
+`dotnet run` needed.
+
+### Prerequisites
+
+- Docker with Docker Compose v2
+- `curl` and `jq` (for the smoke test below)
+- A host that will run the infra. This can be `localhost` or a LAN server
+  reachable from your machine.
+
+### 1. Configure environment variables
+
+Copy the template and fill in real values:
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and set:
+
+- `INFRA_HOST` — the IP of the machine running infra (use `127.0.0.1` if local).
+  Then replace every `<server-lan-ip>` in the file with the same value
+  (including inside `REDIS_CONNECTION` and `KEYCLOAK_AUTHORITY`).
+- `POSTGRES_USER` / `POSTGRES_PASSWORD` — Postgres superuser credentials.
+- `RABBITMQ_DEFAULT_USER` / `RABBITMQ_DEFAULT_PASSWORD` — RabbitMQ credentials;
+  also update `RABBITMQ_MGMT_URL` to point at the same host.
+- `REDIS_PASSWORD` — must match the password baked into `REDIS_CONNECTION`.
+- `KEYCLOAK_ADMIN_PASSWORD`, `OPS_ADMIN_PASSWORD`, `GRAFANA_ADMIN_PASSWORD`.
+- `WEBHOOK_HMAC_SECRET` — any random 32+ byte string.
+
+There is exactly one `.env` file, at the repo root. Both compose files read it.
+
+### 2. Bring up the infrastructure
+
+```bash
+docker compose -f deploy/docker-compose.infra.yml --env-file .env up -d
+```
+
+Starts Postgres 16, RabbitMQ 3.13, Redis 7, Keycloak 25 (with
+`realm-export.json` preloaded), the OpenTelemetry Collector, Jaeger, Seq,
+Prometheus, Grafana, and a local webhook-sink. Wait until Keycloak's log shows
+`Running the server in development mode` before continuing.
+
+### 3. Bring up the application services
+
+```bash
+docker compose -f deploy/docker-compose.yml --env-file .env up --build -d
+```
+
+Builds and starts the six services (Gateway, TransactionIntake,
+SagaOrchestrator, Ledger, BalanceQuery, WebhookDispatcher). Migrations run
+automatically via `IHostedService` inside each service on first start.
+
+### 4. Smoke test: get a token and mint
+
+```bash
+TOKEN=$(curl -s -X POST \
+  "http://<infra-host>:8088/realms/platform-wallet/protocol/openid-connect/token" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=ledger-service-client" \
+  -d "client_secret=ledger-service-secret" \
+  -d "scope=ledger:read ledger:write" | jq -r .access_token)
+
+curl -X POST http://localhost:14041/mint \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "api-version: 1" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{ "creditAccountId": "11111111-1111-1111-1111-111111111111",
+        "amount": 1000,
+        "asset": "USD" }'
+```
+
+A `202 Accepted` means the write was enqueued. Follow the trace in Jaeger or
+poll `GET /accounts/11111111-1111-1111-1111-111111111111/balance` to confirm.
+
+### 5. Reach the Ops Console
+
+Open the **internal** gateway port (default `http://<infra-host>:14044/console/`)
+from inside the private network and log in as `ops-admin` with the password set
+in `OPS_ADMIN_PASSWORD`. The public port `14041` will return `404` for
+`/console/**` and `/admin/**` by design.
+
 ```
