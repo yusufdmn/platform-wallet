@@ -1,3 +1,4 @@
+using Dapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,10 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        // Npgsql returns `timestamp with time zone` as a UTC DateTime; teach Dapper to read it as
+        // DateTimeOffset so postings-history materialisation doesn't throw InvalidCastException.
+        SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
+
         var host     = configuration["POSTGRES_HOST"]     ?? "postgres";
         var port     = configuration["POSTGRES_PORT"]     ?? "5432";
         var user     = configuration["POSTGRES_USER"]     ?? "postgres";

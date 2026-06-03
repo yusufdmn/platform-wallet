@@ -1,0 +1,47 @@
+@model HomeViewModel
+@{
+    ViewData["Title"] = "Choose who to be";
+}
+
+<div class="mx-auto max-w-3xl text-center">
+    <h1 class="text-3xl font-bold tracking-tight">Who are you today?</h1>
+    <p class="mt-2 text-slate-500">Pick a demo identity — no passwords. This is a sandbox for the Platform Wallet ledger.</p>
+</div>
+
+<section class="mt-10">
+    <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Customers</h2>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        @foreach (var customer in Model.Customers)
+        {
+            <form asp-controller="Home" asp-action="SignInAsCustomer" method="post">
+                <input type="hidden" name="id" value="@customer.Id" />
+                <button type="submit" class="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-emerald-300 hover:shadow-md">
+                    <span class="grid h-11 w-11 place-items-center rounded-full bg-emerald-100 font-bold text-emerald-700">@customer.Name.Substring(0, 1)</span>
+                    <span>
+                        <span class="block font-semibold">@customer.Name</span>
+                        <span class="block text-xs text-slate-500">Customer</span>
+                    </span>
+                </button>
+            </form>
+        }
+    </div>
+</section>
+
+<section class="mt-10">
+    <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Restaurants</h2>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        @foreach (var restaurant in Model.Restaurants)
+        {
+            <form asp-controller="Home" asp-action="SignInAsRestaurant" method="post">
+                <input type="hidden" name="id" value="@restaurant.Id" />
+                <button type="submit" class="flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-emerald-300 hover:shadow-md">
+                    <span class="grid h-11 w-11 place-items-center rounded-full bg-orange-100 text-xl">🍽️</span>
+                    <span>
+                        <span class="block font-semibold">@restaurant.Name</span>
+                        <span class="block text-xs text-slate-500">@restaurant.Cuisine</span>
+                    </span>
+                </button>
+            </form>
+        }
+    </div>
+</section>

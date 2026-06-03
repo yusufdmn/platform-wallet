@@ -24,6 +24,7 @@ public sealed class FullSystemFlowTests : IAsyncLifetime, IDisposable
     // ── Config from env ───────────────────────────────────────────────────────
 
     private static readonly string? BaseUrl;
+    private static readonly string  AdminBaseUrl;
     private static readonly string  KeycloakUrl;
     private static readonly string  WebhookSinkUrl;
     private static readonly string  WebhookHmacSecret;
@@ -32,6 +33,8 @@ public sealed class FullSystemFlowTests : IAsyncLifetime, IDisposable
     {
         DotNetEnv.Env.TraversePath().Load();
         BaseUrl           = Environment.GetEnvironmentVariable("E2E_BASE_URL");
+        // The admin plane is served on the gateway's internal-only listener, not the public edge.
+        AdminBaseUrl      = Environment.GetEnvironmentVariable("E2E_ADMIN_BASE_URL")   ?? "http://localhost:14044";
         KeycloakUrl       = Environment.GetEnvironmentVariable("E2E_KEYCLOAK_URL")     ?? "http://localhost:8088";
         WebhookSinkUrl    = Environment.GetEnvironmentVariable("E2E_WEBHOOK_SINK_URL") ?? "http://localhost:9999";
         WebhookHmacSecret = Environment.GetEnvironmentVariable("WEBHOOK_HMAC_SECRET")
@@ -41,7 +44,7 @@ public sealed class FullSystemFlowTests : IAsyncLifetime, IDisposable
     private const string Realm        = "platform-wallet";
     private const string ClientId     = "ledger-service-client";
     private const string ClientSecret = "ledger-service-secret";
-    private const string Scopes       = "ledger:read ledger:write";
+    private const string Scopes       = "ledger:read ledger:write ledger:admin";
 
     private static readonly JsonSerializerOptions JsonOpts =
         new() { PropertyNameCaseInsensitive = true };
@@ -49,6 +52,7 @@ public sealed class FullSystemFlowTests : IAsyncLifetime, IDisposable
     // ── State ─────────────────────────────────────────────────────────────────
 
     private readonly HttpClient _gateway     = new() { Timeout = TimeSpan.FromSeconds(30) };
+    private readonly HttpClient _admin       = new() { Timeout = TimeSpan.FromSeconds(30) };
     private readonly HttpClient _webhookSink = new() { Timeout = TimeSpan.FromSeconds(10) };
     private string _token = "";
 
@@ -63,10 +67,13 @@ public sealed class FullSystemFlowTests : IAsyncLifetime, IDisposable
 
         _token = await FetchTokenAsync();
         _gateway.BaseAddress     = new Uri(BaseUrl);
+        _admin.BaseAddress       = new Uri(AdminBaseUrl);
         _webhookSink.BaseAddress = new Uri(WebhookSinkUrl);
         _gateway.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         _gateway.DefaultRequestHeaders.Add("api-version", "1");
+        _admin.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
 
         await _webhookSink.DeleteAsync("/deliveries");
     }
@@ -74,6 +81,7 @@ public sealed class FullSystemFlowTests : IAsyncLifetime, IDisposable
     public void Dispose()
     {
         _gateway.Dispose();
+        _admin.Dispose();
         _webhookSink.Dispose();
     }
 
@@ -203,7 +211,7 @@ public sealed class FullSystemFlowTests : IAsyncLifetime, IDisposable
     {
         E2ESkip.IfNotConfigured(BaseUrl);
 
-        var resp = await _gateway.GetAsync("/admin/invariants/zero-sum");
+        var resp = await _admin.GetAsync("/admin/invariants/zero-sum");
         resp.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());

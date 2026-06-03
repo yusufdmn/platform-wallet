@@ -1,0 +1,13 @@
+@model UberEatsWallet.Application.Abstractions.WalletBalance?
+@if (Model is not null)
+{
+    <a asp-controller="Wallet" asp-action="Index"
+       class="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-600/20 hover:bg-emerald-100 sm:flex">
+        <span class="text-emerald-500">◎</span>
+        <span>@Model.Balance.ToString("0.00") @Model.Asset</span>
+        @if (Model.HeldAmount > 0)
+        {
+            <span class="text-xs font-normal text-emerald-600/70">@Model.HeldAmount.ToString("0.00") held</span>
+        }
+    </a>
+}
