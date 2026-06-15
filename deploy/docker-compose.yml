@@ -167,8 +167,13 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASSWORD: ${RABBITMQ_DEFAULT_PASSWORD}
       RABBITMQ_VHOST: ${RABBITMQ_VHOST}
-      # ApiGateway reads REDIS_CONNECTION (StackExchange.Redis format).
+      # ApiGateway reads REDIS_CONNECTION (StackExchange.Redis format). Redis backs both the
+      # idempotency cache and the distributed token-bucket rate limiter.
       REDIS_CONNECTION: ${REDIS_CONNECTION}
+      # Token-bucket rate limit (see .env.example for the semantics).
+      RATE_LIMIT_TOKEN_LIMIT: ${RATE_LIMIT_TOKEN_LIMIT}
+      RATE_LIMIT_TOKENS_PER_PERIOD: ${RATE_LIMIT_TOKENS_PER_PERIOD}
+      RATE_LIMIT_REPLENISH_SECONDS: ${RATE_LIMIT_REPLENISH_SECONDS}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT}
       OTEL_SERVICE_NAME: api-gateway
       # YARP cluster destinations: override .env's localhost values with Docker service names.
