@@ -7,8 +7,6 @@ namespace PlatformWallet.SagaOrchestrator.Domain;
 
 public sealed class TransactionSagaStateMachine : MassTransitStateMachine<TransactionSagaState>
 {
-    private const string MintTransactionType     = "Mint";
-    private const string BurnTransactionType     = "Burn";
     private const string TransferTransactionType = "Transfer";
 
     // ── States ────────────────────────────────────────────────────────────────
@@ -21,22 +19,16 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
 
     // ── Events ────────────────────────────────────────────────────────────────
     public Event<TransactionSubmitted>      TransactionSubmitted     { get; private set; } = null!;
-    public Event<FundsMinted>               FundsMinted              { get; private set; } = null!;
-    public Event<FundsBurned>               FundsBurned              { get; private set; } = null!;
     public Event<FundsHeld>                 FundsHeld                { get; private set; } = null!;
     public Event<CaptureTransferRequested>  CaptureTransferRequested { get; private set; } = null!;
     public Event<VoidRequested>             VoidRequested            { get; private set; } = null!;
     public Event<TransferCaptured>          TransferCaptured         { get; private set; } = null!;
     public Event<HoldVoided>                HoldVoided               { get; private set; } = null!;
     // Domain failure events — business-rule violations (no retry, no DLQ)
-    public Event<MintFailed>                MintFailed               { get; private set; } = null!;
-    public Event<BurnFailed>                BurnFailed               { get; private set; } = null!;
     public Event<HoldFailed>                HoldFailed               { get; private set; } = null!;
     public Event<CaptureFailed>             CaptureFailed            { get; private set; } = null!;
     public Event<VoidFailed>                VoidFailed               { get; private set; } = null!;
     // System fault events — infrastructure failures (retry → DLQ → failed_messages)
-    public Event<Fault<MintFunds>>          MintFundsFaulted         { get; private set; } = null!;
-    public Event<Fault<BurnFunds>>          BurnFundsFaulted         { get; private set; } = null!;
     public Event<Fault<HoldFunds>>          HoldFundsFaulted         { get; private set; } = null!;
     public Event<Fault<CaptureTransfer>>    CaptureTransferFaulted   { get; private set; } = null!;
     public Event<Fault<VoidHold>>           VoidHoldFaulted          { get; private set; } = null!;
@@ -71,12 +63,6 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
         Event(() => TransactionSubmitted,
             e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
 
-        Event(() => FundsMinted,
-            e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
-
-        Event(() => FundsBurned,
-            e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
-
         Event(() => FundsHeld,
             e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
 
@@ -92,12 +78,6 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
         Event(() => HoldVoided,
             e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
 
-        Event(() => MintFailed,
-            e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
-
-        Event(() => BurnFailed,
-            e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
-
         Event(() => HoldFailed,
             e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
 
@@ -106,12 +86,6 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
 
         Event(() => VoidFailed,
             e => e.CorrelateById(ctx => ctx.Message.CorrelationId));
-
-        Event(() => MintFundsFaulted,
-            e => e.CorrelateById(ctx => ctx.Message.Message.CorrelationId));
-
-        Event(() => BurnFundsFaulted,
-            e => e.CorrelateById(ctx => ctx.Message.Message.CorrelationId));
 
         Event(() => HoldFundsFaulted,
             e => e.CorrelateById(ctx => ctx.Message.Message.CorrelationId));
@@ -125,34 +99,12 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
 
     private void ConfigureTransitions(ILogger<TransactionSagaStateMachine> logger)
     {
-        // ── Mint flow ─────────────────────────────────────────────────────────
+        // ── Transfer flow (hold first) ──────────────────────────────────────────
         // NOTE: Use `Publish(ctx => new T(...))` typed-factory overload, NOT
         // `PublishAsync(ctx => ctx.Init<T>(...))`. The Init<T> path requires the
         // message type to have a parameterless constructor (records with primary
         // constructors do not). The typed factory bypasses the message initializer.
         Initially(
-            When(TransactionSubmitted,
-                ctx => string.Equals(ctx.Message.TransactionType, MintTransactionType, StringComparison.OrdinalIgnoreCase))
-                .Then(ctx => InitialiseState(ctx.Saga, ctx.Message))
-                .Publish(ctx => new MintFunds(
-                    ctx.Saga.CorrelationId,
-                    ctx.Saga.CreditAccountId,
-                    ctx.Saga.Amount,
-                    ctx.Saga.Asset))
-                .TransitionTo(Processing),
-
-            // ── Burn flow ─────────────────────────────────────────────────────
-            When(TransactionSubmitted,
-                ctx => string.Equals(ctx.Message.TransactionType, BurnTransactionType, StringComparison.OrdinalIgnoreCase))
-                .Then(ctx => InitialiseState(ctx.Saga, ctx.Message))
-                .Publish(ctx => new BurnFunds(
-                    ctx.Saga.CorrelationId,
-                    ctx.Saga.DebitAccountId!.Value,
-                    ctx.Saga.Amount,
-                    ctx.Saga.Asset))
-                .TransitionTo(Processing),
-
-            // ── Transfer flow (hold first) ────────────────────────────────────
             When(TransactionSubmitted,
                 ctx => string.Equals(ctx.Message.TransactionType, TransferTransactionType, StringComparison.OrdinalIgnoreCase))
                 .Then(ctx => InitialiseState(ctx.Saga, ctx.Message))
@@ -165,70 +117,6 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
                 .TransitionTo(Processing));
 
         During(Processing,
-            // Mint success
-            When(FundsMinted)
-                .Then(ctx => Touch(ctx.Saga))
-                .Publish(ctx => new TransactionMinted(
-                    ctx.Saga.CorrelationId,
-                    ctx.Saga.DebitAccountId,
-                    ctx.Saga.CreditAccountId))
-                .TransitionTo(Completed)
-                .Then(ctx => logger.LogInformation(
-                    "Saga {CorrelationId}: mint completed", ctx.Saga.CorrelationId))
-                .Finalize(),
-
-            // Mint domain failure — business rule violated (no retry)
-            When(MintFailed)
-                .Then(ctx => Fail(ctx.Saga, ctx.Message.Reason))
-                .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
-                .TransitionTo(Failed)
-                .Then(ctx => logger.LogWarning(
-                    "Saga {CorrelationId}: mint domain failure — {Reason}",
-                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
-                .Finalize(),
-
-            // Mint system fault — infrastructure failure (retried → DLQ → failed_messages)
-            When(MintFundsFaulted)
-                .Then(ctx => Fail(ctx.Saga, FirstException(ctx.Message)))
-                .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
-                .TransitionTo(Failed)
-                .Then(ctx => logger.LogError(
-                    "Saga {CorrelationId}: mint system fault — {Reason}",
-                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
-                .Finalize(),
-
-            // Burn success
-            When(FundsBurned)
-                .Then(ctx => Touch(ctx.Saga))
-                .Publish(ctx => new TransactionBurned(
-                    ctx.Saga.CorrelationId,
-                    ctx.Saga.DebitAccountId!.Value,
-                    ctx.Saga.CreditAccountId))
-                .TransitionTo(Completed)
-                .Then(ctx => logger.LogInformation(
-                    "Saga {CorrelationId}: burn completed", ctx.Saga.CorrelationId))
-                .Finalize(),
-
-            // Burn domain failure — business rule violated (no retry)
-            When(BurnFailed)
-                .Then(ctx => Fail(ctx.Saga, ctx.Message.Reason))
-                .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
-                .TransitionTo(Failed)
-                .Then(ctx => logger.LogWarning(
-                    "Saga {CorrelationId}: burn domain failure — {Reason}",
-                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
-                .Finalize(),
-
-            // Burn system fault — infrastructure failure (retried → DLQ → failed_messages)
-            When(BurnFundsFaulted)
-                .Then(ctx => Fail(ctx.Saga, FirstException(ctx.Message)))
-                .Publish(ctx => new TransactionFailed(ctx.Saga.CorrelationId, ctx.Saga.FailureReason!))
-                .TransitionTo(Failed)
-                .Then(ctx => logger.LogError(
-                    "Saga {CorrelationId}: burn system fault — {Reason}",
-                    ctx.Saga.CorrelationId, ctx.Saga.FailureReason))
-                .Finalize(),
-
             // Hold success → publish TransactionHeld, schedule TTL auto-void, wait for capture or void request
             When(FundsHeld)
                 .Then(ctx => Touch(ctx.Saga))
@@ -428,8 +316,6 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
             Ignore(FundsHeld));
 
         During(Completed,
-            Ignore(FundsMinted),
-            Ignore(FundsBurned),
             Ignore(FundsHeld),
             Ignore(TransferCaptured),
             Ignore(HoldVoided),
@@ -437,9 +323,9 @@ public sealed class TransactionSagaStateMachine : MassTransitStateMachine<Transa
             Ignore(VoidRequested));
 
         During(Failed,
-            Ignore(MintFailed), Ignore(BurnFailed), Ignore(HoldFailed),
+            Ignore(HoldFailed),
             Ignore(CaptureFailed), Ignore(VoidFailed),
-            Ignore(MintFundsFaulted), Ignore(BurnFundsFaulted), Ignore(HoldFundsFaulted),
+            Ignore(HoldFundsFaulted),
             Ignore(CaptureTransferFaulted), Ignore(VoidHoldFaulted));
 
         During(VoidStranded,

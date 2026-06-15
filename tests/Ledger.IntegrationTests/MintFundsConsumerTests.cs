@@ -58,7 +58,10 @@ public class MintFundsConsumerTests(LedgerIntegrationFixture fixture)
         postings.Should().AllSatisfy(p => p.Phase.Should().Be(Phase.Mint));
 
         await context.Received(1).Publish(
-            Arg.Is<FundsMinted>(e => e.CorrelationId == correlationId),
+            Arg.Is<TransactionMinted>(e =>
+                e.CorrelationId == correlationId &&
+                e.DebitAccountId == null &&
+                e.CreditAccountId == accountId),
             Arg.Any<CancellationToken>());
     }
 }

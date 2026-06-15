@@ -37,7 +37,7 @@ public sealed class BurnFundsConsumer(
             repository.AddPosting(debit);
             repository.AddPosting(credit);
 
-            await context.Publish(new FundsBurned(msg.CorrelationId), ct);
+            await context.Publish(new TransactionBurned(msg.CorrelationId, msg.DebitAccountId, Guid.Empty), ct);
 
             await repository.SaveChangesAsync(ct);
 
@@ -47,7 +47,7 @@ public sealed class BurnFundsConsumer(
         }
         catch (LedgerDomainException ex)
         {
-            await context.Publish(new BurnFailed(msg.CorrelationId, ex.Message), ct);
+            await context.Publish(new TransactionFailed(msg.CorrelationId, ex.Message), ct);
 
             logger.LogWarning(
                 "Burn failed for tx {CorrelationId}: {Reason}", msg.CorrelationId, ex.Message);

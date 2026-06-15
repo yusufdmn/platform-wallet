@@ -1,7 +1,7 @@
 using MassTransit;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using PlatformWallet.Contracts.Events;
+using PlatformWallet.Contracts.Commands;
 using PlatformWallet.TransactionIntake.Application.Common;
 using PlatformWallet.TransactionIntake.Application.Persistence;
 using PlatformWallet.TransactionIntake.Domain;
@@ -68,11 +68,9 @@ public sealed class SubmitBurnHandler(
         Guid              transactionId,
         CancellationToken cancellationToken) =>
         await publishEndpoint.Publish(
-            new TransactionSubmitted(
+            new BurnFunds(
                 transactionId,
-                TransactionType.Burn.ToString(),
-                DebitAccountId:  request.DebitAccountId,
-                CreditAccountId: Guid.Empty,
+                request.DebitAccountId,
                 request.Amount,
                 request.Asset),
             cancellationToken);

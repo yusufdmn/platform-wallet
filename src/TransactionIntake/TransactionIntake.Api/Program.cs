@@ -67,6 +67,8 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<SagaFaultedOnSubmissionConsumer>();
     x.AddConsumer<SagaFaultedOnCaptureConsumer>();
     x.AddConsumer<SagaFaultedOnVoidConsumer>();
+    x.AddConsumer<LedgerFaultedOnMintConsumer>();
+    x.AddConsumer<LedgerFaultedOnBurnConsumer>();
 
     x.AddEntityFrameworkOutbox<IntakeDbContext>(o =>
     {

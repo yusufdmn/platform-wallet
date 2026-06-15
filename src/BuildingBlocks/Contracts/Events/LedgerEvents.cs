@@ -10,12 +10,4 @@ public record CaptureFailed(Guid CorrelationId, string Reason) : ITransactionMes
 
 public record HoldVoided(Guid CorrelationId) : ITransactionMessage;
 
-public record FundsMinted(Guid CorrelationId) : ITransactionMessage;
-
-public record MintFailed(Guid CorrelationId, string Reason) : ITransactionMessage;
-
-public record FundsBurned(Guid CorrelationId) : ITransactionMessage;
-
-public record BurnFailed(Guid CorrelationId, string Reason) : ITransactionMessage;
-
 public record VoidFailed(Guid CorrelationId, string Reason) : ITransactionMessage;

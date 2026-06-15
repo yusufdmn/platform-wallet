@@ -61,12 +61,15 @@ public class BurnFundsConsumerTests(LedgerIntegrationFixture fixture)
         postings.Should().AllSatisfy(p => p.Phase.Should().Be(Phase.Burn));
 
         await context.Received(1).Publish(
-            Arg.Is<FundsBurned>(e => e.CorrelationId == correlationId),
+            Arg.Is<TransactionBurned>(e =>
+                e.CorrelationId == correlationId &&
+                e.DebitAccountId == accountId &&
+                e.CreditAccountId == Guid.Empty),
             Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Consume_publishes_BurnFailed_when_insufficient_funds()
+    public async Task Consume_publishes_TransactionFailed_when_insufficient_funds()
     {
         var accountId     = Guid.NewGuid();
         var correlationId = Guid.NewGuid();
@@ -94,12 +97,12 @@ public class BurnFundsConsumerTests(LedgerIntegrationFixture fixture)
         postings.Should().BeEmpty();
 
         await context.Received(1).Publish(
-            Arg.Is<BurnFailed>(e => e.CorrelationId == correlationId),
+            Arg.Is<TransactionFailed>(e => e.CorrelationId == correlationId),
             Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Consume_publishes_BurnFailed_when_account_not_found()
+    public async Task Consume_publishes_TransactionFailed_when_account_not_found()
     {
         var correlationId = Guid.NewGuid();
         var unknownId     = Guid.NewGuid();
@@ -115,7 +118,7 @@ public class BurnFundsConsumerTests(LedgerIntegrationFixture fixture)
         await consumer.Consume(context);
 
         await context.Received(1).Publish(
-            Arg.Is<BurnFailed>(e => e.CorrelationId == correlationId),
+            Arg.Is<TransactionFailed>(e => e.CorrelationId == correlationId),
             Arg.Any<CancellationToken>());
     }
 }

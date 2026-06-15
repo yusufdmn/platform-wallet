@@ -40,7 +40,7 @@ public sealed class MintFundsConsumer(
             repository.AddPosting(debit);
             repository.AddPosting(credit);
 
-            await context.Publish(new FundsMinted(msg.CorrelationId), ct);
+            await context.Publish(new TransactionMinted(msg.CorrelationId, null, msg.CreditAccountId), ct);
 
             await repository.SaveChangesAsync(ct);
 
@@ -50,7 +50,7 @@ public sealed class MintFundsConsumer(
         }
         catch (LedgerDomainException ex)
         {
-            await context.Publish(new MintFailed(msg.CorrelationId, ex.Message), ct);
+            await context.Publish(new TransactionFailed(msg.CorrelationId, ex.Message), ct);
 
             logger.LogWarning(
                 "Mint failed for tx {CorrelationId}: {Reason}", msg.CorrelationId, ex.Message);

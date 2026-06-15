@@ -28,47 +28,6 @@ public class SagaStateMachineTests
     }
 
     [Fact]
-    public async Task Happy_path_transitions_Submitted_to_Processing_to_Completed_for_Mint()
-    {
-        await using var sp = BuildProvider();
-
-        var harness     = sp.GetRequiredService<ITestHarness>();
-        await harness.Start();
-
-        try
-        {
-            var sagaHarness   = harness.GetSagaStateMachineHarness<TransactionSagaStateMachine, TransactionSagaState>();
-            var correlationId = NewId.NextGuid();
-
-            await harness.Bus.Publish(new TransactionSubmitted(
-                CorrelationId:   correlationId,
-                TransactionType: "Mint",
-                DebitAccountId:  Guid.Empty,
-                CreditAccountId: Guid.NewGuid(),
-                Amount:          100m,
-                Asset:           "USD"));
-
-            // Saga should be in Processing after receiving TransactionSubmitted
-            (await sagaHarness.Exists(correlationId, machine => machine.Processing,
-                TimeSpan.FromSeconds(10)))
-                .Should().NotBeNull("saga must transition to Processing after TransactionSubmitted");
-
-            await harness.Bus.Publish(new FundsMinted(correlationId));
-
-            await harness.InactivityTask;
-
-            // Saga finalizes immediately on Completed, so assert via published event
-            (await harness.Published.Any<TransactionMinted>(x =>
-                x.Context.Message.CorrelationId == correlationId))
-                .Should().BeTrue("saga must publish TransactionMinted on completion");
-        }
-        finally
-        {
-            await harness.Stop();
-        }
-    }
-
-    [Fact]
     public async Task Capture_failure_triggers_VoidHold_and_lands_in_Failed()
     {
         await using var sp = BuildProvider();
