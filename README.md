@@ -50,7 +50,9 @@ by `tests/ArchitectureTests` (NetArchTest).
 - **Transactional Outbox**: the `transactions` and `outbox_message` rows commit
   in one `SaveChangesAsync`; MassTransit relays the message to RabbitMQ.
 - **Saga orchestration with compensation**: a single `TransactionSagaStateMachine`
-  drives the lifecycle and voids held funds when a capture fails.
+  drives the two-stage transfer flow (hold → capture | void) and voids held funds
+  when a capture fails. Single-step mint and burn skip the saga and dispatch
+  straight to the Ledger.
 - **Two-layer idempotency**: the gateway dedupes on `Idempotency-Key` in Redis;
   consumers dedupe on the MassTransit inbox plus `uq_posting_tx_account_phase`.
 - **CQRS**: writes go through EF Core; reads use Dapper. Balance Query is
@@ -62,8 +64,8 @@ by `tests/ArchitectureTests` (NetArchTest).
 - **Resilience escalation**: in-line Retry, then Scheduled Retries
   (`1m, 5m, 30m, 2h, 12h, 24h`), then manual replay from the Ops Console once a
   delivery lands in `failed_webhook_deliveries` (circuit breaker planned).
-- **OpenTelemetry auto-propagation**: one trace ID flows
-  Gateway to Intake to RabbitMQ to Saga to Ledger to Webhook, with no manual
+- **OpenTelemetry auto-propagation**: one trace ID flows Gateway to Intake to
+  RabbitMQ to Saga (on the transfer path) to Ledger to Webhook, with no manual
   correlation plumbing beyond a 5-line YARP middleware that surfaces
   `X-Correlation-Id`.
 
@@ -75,7 +77,8 @@ by `tests/ArchitectureTests` (NetArchTest).
 - **TransactionIntake** (Api): the only write front door. A MediatR handler
   writes the `transactions` row and the outbox row in one transaction; status
   consumers own each state transition.
-- **SagaOrchestrator** (Worker): the Automatonymous state machine. States
+- **SagaOrchestrator** (Worker): the Automatonymous state machine for the
+  two-stage transfer flow (mint and burn bypass it). States
   `Submitted -> Processing -> Held -> Completed | Failed | VoidStranded`,
   pessimistic-concurrency saga repository, partitioned by correlation id. The
   only service where MassTransit types are allowed in the Domain layer.
