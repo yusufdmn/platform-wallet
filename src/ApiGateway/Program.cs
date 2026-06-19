@@ -1,14 +1,14 @@
 using System.Net.Http.Headers;
 using System.Text;
-using System.Threading.RateLimiting;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.RateLimiting;
 using PlatformWallet.ApiGateway.Yarp.Endpoints;
 using PlatformWallet.ApiGateway.Yarp.ExceptionHandlers;
 using PlatformWallet.ApiGateway.Yarp.Infrastructure.Rabbit;
+using PlatformWallet.ApiGateway.Yarp.Infrastructure.RateLimiting;
 using PlatformWallet.ApiGateway.Yarp.Middleware;
 using PlatformWallet.Observability;
+using StackExchange.Redis;
 
 Env.TraversePath().Load();
 
@@ -39,26 +39,28 @@ builder.Services.AddAuthorization(o =>
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-// Fixed-window rate limit partitioned by remote IP
-var rateLimit = int.TryParse(builder.Configuration["RATE_LIMIT_PER_MINUTE"], out var rl) ? rl : 100;
-builder.Services.AddRateLimiter(o =>
-{
-    o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
-    {
-        var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = rateLimit,
-            Window      = TimeSpan.FromMinutes(1),
-        });
-    });
-    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-});
-
 var redisConnection = builder.Configuration["REDIS_CONNECTION"]
     ?? throw new InvalidOperationException("REDIS_CONNECTION is required");
 
-builder.Services.AddStackExchangeRedisCache(o => o.Configuration = redisConnection);
+// One shared multiplexer backs both the idempotency cache and the rate limiter.
+// AbortOnConnectFail=false keeps startup non-blocking when Redis is briefly unavailable
+// (it reconnects in the background) and underpins the rate limiter's fail-open behaviour
+// (see FailOpenRateLimiter). A short connect timeout bounds how long a degraded Redis can
+// stall the first requests.
+var redisOptions = ConfigurationOptions.Parse(redisConnection);
+redisOptions.AbortOnConnectFail = false;
+redisOptions.ConnectTimeout     = 2000;
+redisOptions.ConnectRetry       = 1;
+var redisMultiplexer = await ConnectionMultiplexer.ConnectAsync(redisOptions);
+builder.Services.AddSingleton<IConnectionMultiplexer>(redisMultiplexer);
+
+builder.Services.AddStackExchangeRedisCache(o =>
+    o.ConnectionMultiplexerFactory = () => Task.FromResult<IConnectionMultiplexer>(redisMultiplexer));
+
+// Distributed, Redis-backed token-bucket rate limit partitioned by remote IP.
+builder.Services.AddGatewayRateLimiting(
+    redisMultiplexer,
+    GatewayRateLimitOptions.FromConfiguration(builder.Configuration));
 
 var rabbitMgmt = new RabbitMqManagementOptions
 {

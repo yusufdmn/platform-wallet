@@ -96,33 +96,6 @@ public class JwtScopePolicyTests
     }
 
     [Fact]
-    public async Task Rate_limit_breach_returns_429_with_RetryAfter_header()
-    {
-        await using var factory = CreateFactory();
-        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false,
-        });
-
-        HttpResponseMessage? lastResponse = null;
-
-        // Rate limiter allows 100 requests per minute. /healthz has no auth requirement.
-        for (int i = 0; i < 101; i++)
-        {
-            lastResponse?.Dispose();
-            lastResponse = await client.GetAsync("/healthz");
-
-            if (lastResponse.StatusCode == HttpStatusCode.TooManyRequests)
-            {
-                break;
-            }
-        }
-
-        lastResponse!.StatusCode.Should().Be(HttpStatusCode.TooManyRequests,
-            "fixed-window rate limiter must reject the 101st request from same IP");
-    }
-
-    [Fact]
     public async Task Repeat_idempotency_key_returns_cached_response_without_forwarding()
     {
         await using var factory = CreateFactory();

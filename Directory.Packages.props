@@ -47,6 +47,8 @@
   <ItemGroup>
     <PackageVersion Include="StackExchange.Redis" Version="2.8.16" />
     <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.10" />
+    <PackageVersion Include="RedisRateLimiting" Version="1.2.1" />
+    <PackageVersion Include="RedisRateLimiting.AspNetCore" Version="1.2.1" />
   </ItemGroup>
 
   <!-- YARP -->

@@ -72,8 +72,9 @@ by `tests/ArchitectureTests` (NetArchTest).
 ### Microservices
 
 - **ApiGateway** (YARP, flat, no Clean Architecture): JWT validation, scope
-  policies, fixed-window rate limit, Redis idempotency cache, correlation-ID
-  stamping, then forward. Also hosts the Ops Console and the DLQ admin endpoints.
+  policies, Redis-backed token-bucket rate limit, Redis idempotency cache,
+  correlation-ID stamping, then forward. Also hosts the Ops Console and the DLQ
+  admin endpoints.
 - **TransactionIntake** (Api): the only write front door. A MediatR handler
   writes the `transactions` row and the outbox row in one transaction; status
   consumers own each state transition.

@@ -12,6 +12,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="StackExchange.Redis" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
+    <PackageReference Include="RedisRateLimiting" />
+    <PackageReference Include="RedisRateLimiting.AspNetCore" />
     <PackageReference Include="DotNetEnv" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
