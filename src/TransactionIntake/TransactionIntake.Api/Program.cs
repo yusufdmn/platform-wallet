@@ -101,10 +101,7 @@ builder.Services.AddMassTransit(x =>
             r.Ignore<InvalidCastException>();
         });
 
-        cfg.UseScheduledRedelivery(r => r.Intervals(
-            TimeSpan.FromMinutes(1),
-            TimeSpan.FromMinutes(5),
-            TimeSpan.FromMinutes(30)));
+        // Scheduled redelivery disabled on the load-test branch.
 
         cfg.ConfigureEndpoints(ctx);
     });

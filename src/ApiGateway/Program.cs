@@ -99,7 +99,9 @@ app.UseExceptionHandler();
 // Middleware order per CLAUDE.md: Auth → ScopePolicy → RateLimit → Idempotency → CorrelationId → YARP
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseRateLimiter();
+// Rate limiting disabled on the load-test branch so throughput stress reaches the
+// services instead of being capped at the gateway. Re-enable for production.
+// app.UseRateLimiter();
 app.UseMiddleware<IdempotencyMiddleware>();
 app.UseMiddleware<CorrelationIdMiddleware>();
 
