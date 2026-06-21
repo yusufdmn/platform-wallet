@@ -13,11 +13,11 @@ import { uuidv4 } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 //   ACCOUNT_IDS          (optional) comma-separated GUIDs. Defaults to 10 below.
 //                        DBs are fresh; accounts are auto-created on first mint.
 // ---------------------------------------------------------------------------
-const ACCOUNT_COUNT = 10;
-
-// 10 fixed, distinct account GUIDs (000..0001 through 000..0010).
-const DEFAULT_ACCOUNTS = Array.from({ length: ACCOUNT_COUNT }, (_, i) =>
-  `00000000-0000-0000-0000-${String(i + 1).padStart(12, '0')}`);
+// 10 fixed, distinct account GUIDs, each a single repeated hex digit:
+// 11111111-1111-1111-1111-111111111111 ... aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+const ACCOUNT_DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'a'];
+const DEFAULT_ACCOUNTS = ACCOUNT_DIGITS.map((d) =>
+  `${d.repeat(8)}-${d.repeat(4)}-${d.repeat(4)}-${d.repeat(4)}-${d.repeat(12)}`);
 
 const GATEWAY   = mustEnv('GATEWAY_URL');
 const KC        = mustEnv('KEYCLOAK_AUTHORITY');
@@ -30,17 +30,23 @@ const ACCOUNTS = (__ENV.ACCOUNT_IDS
   ? __ENV.ACCOUNT_IDS.split(',').map((s) => s.trim()).filter(Boolean)
   : DEFAULT_ACCOUNTS);
 
+// Bounded, predictable load: total requests = RATE * DURATION_SECONDS.
+// Defaults: 50 req/s for 60s = 3000 mints. Override with env vars.
+const RATE             = Number(__ENV.RATE || 50);              // requests per second
+const DURATION_SECONDS = Number(__ENV.DURATION_SECONDS || 60);  // how long to sustain it
+
 export const options = {
   scenarios: {
     mint: {
-      executor: 'ramping-vus',
+      executor: 'constant-arrival-rate',
       exec: 'mint',
-      startVUs: 0,
-      stages: [
-        { duration: '20s', target: 40 },
-        { duration: '1m',  target: 40 },
-        { duration: '20s', target: 0 },
-      ],
+      rate: RATE,
+      timeUnit: '1s',
+      duration: `${DURATION_SECONDS}s`,
+      // Caps concurrency so a slow server can't be piled onto without bound:
+      // if the rate can't be met, k6 stops sending rather than spawning more VUs.
+      preAllocatedVUs: 50,
+      maxVUs: 100,
       gracefulStop: '10s',
     },
   },
@@ -69,12 +75,18 @@ export function setup() {
   return { token: res.json('access_token') };
 }
 
+// Mint amount range (inclusive). Override with MINT_MIN / MINT_MAX env vars.
+const MINT_MIN = Number(__ENV.MINT_MIN || 1);
+const MINT_MAX = Number(__ENV.MINT_MAX || 1000);
+
 export function mint(data) {
   // Spread credits evenly across the 10 accounts.
   const id = ACCOUNTS[Math.floor(Math.random() * ACCOUNTS.length)];
+  // Vary the amount so balances grow unevenly, not a flat 1 USD each time.
+  const amount = MINT_MIN + Math.floor(Math.random() * (MINT_MAX - MINT_MIN + 1));
   const res = http.post(
     `${GATEWAY}/mint`,
-    JSON.stringify({ creditAccountId: id, amount: 1, asset: ASSET }),
+    JSON.stringify({ creditAccountId: id, amount, asset: ASSET }),
     {
       headers: {
         Authorization: `Bearer ${data.token}`,
