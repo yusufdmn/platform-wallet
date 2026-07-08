@@ -1,6 +1,6 @@
 # Platform Wallet
 
-**What it is.** A self-hostable, single-tenant **.NET 8 double-entry ledger**
+**What it is.** A self-hostable,**.NET 8 double-entry ledger**
 a platform drops into its own environment to track internal money — user
 balances, store credit, in-app points, or held funds during checkout. The
 domain is deliberately thin so the architecture stays in focus.
@@ -10,7 +10,7 @@ breaks the moment you need to answer "where did this money come from?",
 retry a failed write safely, or prove the books balance. Platform Wallet
 replaces that with an append-only ledger (every write is two postings summing
 to zero), a saga that drives multi-step flows and compensates on failure, two
-layers of idempotency so retries are safe, and HMAC-signed webhooks for
+layers of idempotency so retries are safe, and webhooks for
 reliable downstream delivery.
 
 **Who it's for.** Platforms — gaming, e-commerce, SaaS, loyalty — that want
