@@ -43,7 +43,8 @@ by `tests/ArchitectureTests` (NetArchTest).
 
 ### High-Level Architecture
 
-<img width="1024" height="1536" alt="architecture_diagram2" src="https://github.com/user-attachments/assets/cff3f7cd-1e1f-4930-a03f-846917c3527c" />
+<img width="842" height="1264" alt="PlatformWallet_Architecture" src="https://github.com/user-attachments/assets/ff0ab9f4-d328-45cd-a623-17407f0da73e" />
+
 
 ### Key Patterns
 
